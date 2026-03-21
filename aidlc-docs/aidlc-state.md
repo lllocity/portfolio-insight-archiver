@@ -4,7 +4,7 @@
 - **Project Name**: Portfolio Insight & Archiver
 - **Project Type**: Greenfield
 - **Start Date**: 2026-03-12T00:00:00Z
-- **Current Stage**: INCEPTION - Units Generation
+- **Current Stage**: CONSTRUCTION PHASE
 
 ## Workspace State
 - **Existing Code**: No
@@ -25,7 +25,7 @@
 - [ ] User Stories (SKIP - シングルユーザー個人ツール)
 - [x] Workflow Planning
 - [x] Application Design
-- [ ] Units Generation
+- [x] Units Generation
 
 ### 🟢 CONSTRUCTION PHASE
 - [ ] Per-Unit Design & Code Generation
