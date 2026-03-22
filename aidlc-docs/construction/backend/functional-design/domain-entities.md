@@ -79,14 +79,19 @@ J-Quants APIから取得した銘柄情報。24時間キャッシュ。
 
 **SQLiteテーブル名**: `settings`
 
-**既定の設定キー**:
+**既定の設定キー（非機密のみ）**:
 
 | キー | 説明 | 例 |
 |---|---|---|
 | `csv.default.path` | CSVファイルのデフォルトパス | `/data/New_file.csv` |
 | `google.drive.folder.id` | アーカイブ先Google DriveフォルダID | `1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs` |
-| `jquants.refresh.token` | J-Quants APIリフレッシュトークン | （機密値） |
-| `google.sa.key.path` | サービスアカウントJSONキーの絶対パス | `/config/sa-key.json` |
+
+> **機密情報は環境変数で管理（SQLiteには保存しない）**:
+>
+> | 環境変数 | 説明 | 設定場所 |
+> |---|---|---|
+> | `JQUANTS_REFRESH_TOKEN` | J-Quants APIリフレッシュトークン | `.env` / Docker Compose `environment:` |
+> | `GOOGLE_SA_KEY_PATH` | サービスアカウントJSONキーの絶対パス | `.env` / Docker Compose `environment:` |
 
 ---
 

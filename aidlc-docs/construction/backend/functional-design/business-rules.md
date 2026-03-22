@@ -80,7 +80,7 @@
 ## BR-JQUANTS: J-Quants API認証ルール
 
 ### BR-JQ-01: 認証フロー
-1. 設定から `jquants.refresh.token` を取得する
+1. 環境変数 `JQUANTS_REFRESH_TOKEN` からリフレッシュトークンを取得する（SQLiteには保存しない）
 2. Refresh Token → ID Token に交換する（`POST /v1/token/auth_refresh`）
 3. ID Token をメモリキャッシュに保存する（有効期間: 24時間）
 4. 以降のAPIコールでは ID Token をAuthorizationヘッダーに使用する
@@ -89,7 +89,7 @@
 - アプリ起動時、またはAPI呼び出しで401エラーが返った場合に ID Token を再取得する
 
 ### BR-JQ-03: Refresh Token 未設定時
-- `jquants.refresh.token` が未設定の場合、J-Quants APIコールをスキップする
+- 環境変数 `JQUANTS_REFRESH_TOKEN` が未設定または空の場合、J-Quants APIコールをスキップする
 - 全銘柄の StockMeta は null として扱い、処理を継続する（グレースフルデグラデーション）
 
 ### BR-JQ-04: メタデータキャッシュ
@@ -136,7 +136,7 @@ Google Docs の構造化要素を使用する:
 ```
 
 ### BR-GDOCS-04: サービスアカウント未設定時
-- `google.sa.key.path` が未設定またはファイルが存在しない場合、Google Docsアーカイブをスキップする
+- 環境変数 `GOOGLE_SA_KEY_PATH` が未設定、または指定パスにファイルが存在しない場合、Google Docsアーカイブをスキップする
 - インポート処理自体は成功とし、レスポンスに警告メッセージを含める
 
 ---

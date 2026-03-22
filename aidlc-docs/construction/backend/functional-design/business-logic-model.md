@@ -147,9 +147,9 @@ fetchIdToken():
     if idToken in memoryCache AND not expired:
         return cachedIdToken
 
-    refreshToken = settingsRepository.get("jquants.refresh.token")
-    if refreshToken is null:
-        throw JQuantsNotConfiguredException
+    refreshToken = System.getenv("JQUANTS_REFRESH_TOKEN")
+    if refreshToken is null or blank:
+        throw JQuantsNotConfiguredException  // → グレースフルデグラデーション
 
     response = POST /v1/token/auth_refresh { refreshToken }
     idToken = response.idToken

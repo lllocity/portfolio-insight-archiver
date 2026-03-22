@@ -31,7 +31,7 @@
 | SECURITY-09 | **適用** | 本番エラーレスポンスはスタックトレース非公開。Spring Boot Actuator最小公開 |
 | SECURITY-10 | **適用** | Gradle dependency lockingでバージョン固定。脆弱性スキャンは手動実施（`./gradlew dependencyCheckAnalyze`） |
 | SECURITY-11 | **一部適用** | セキュリティロジックは専用モジュールに分離。Rate limiting: ローカルonly・外部公開なし → N/A |
-| SECURITY-12 | **適用** | J-QuantsトークンはSQLiteに保存・ログ出力禁止。サービスアカウントキーは環境変数でパス指定 |
+| SECURITY-12 | **適用** | J-Quantsトークン・サービスアカウントキーパスは**環境変数のみで管理**（SQLiteに保存しない）。ログ出力禁止 |
 | SECURITY-13 | **一部適用** | JacksonによるJSONの安全なデシリアライゼーション。CDN/外部スクリプトなし → SRI N/A |
 | SECURITY-14 | **N/A** | 個人ツール・ローカル環境。本番監視ダッシュボード・アラートは不要 |
 | SECURITY-15 | **適用** | `@ControllerAdvice` グローバルエラーハンドラー。全外部呼び出しに明示的 try-catch。フェイルクローズ |
@@ -53,7 +53,7 @@
 | CSVファイルパス | 必須・文字列長255以下・絶対パス・`/data/` 配下であること・ファイル存在確認・拡張子 `.csv` |
 | Google Drive フォルダID | 必須（設定時）・英数字+ハイフンのみ・44文字以内 |
 | J-Quants リフレッシュトークン | 必須（設定時）・文字列長512以下 |
-| 設定キー（key） | 既定キーリストの中に含まれること |
+| 設定キー（key） | 既定キーリスト（`csv.default.path`, `google.drive.folder.id`）の中に含まれること |
 | 設定値（value） | 文字列長1024以下 |
 
 ---

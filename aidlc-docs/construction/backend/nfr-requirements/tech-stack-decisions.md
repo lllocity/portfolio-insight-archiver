@@ -88,6 +88,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+# 機密情報は環境変数から直接取得（application.yml 経由でDIせず、コードで System.getenv() 取得）
+# JQUANTS_REFRESH_TOKEN  → JQuantsApiClient で直接参照
+# GOOGLE_SA_KEY_PATH     → GoogleDocsArchiveService で直接参照
+# 上記2つは SQLite settings テーブルに保存しない
 ```
 
 ---
