@@ -28,7 +28,8 @@
 - [x] Units Generation
 
 ### 🟢 CONSTRUCTION PHASE
-- [ ] Per-Unit Design & Code Generation
+- [x] Per-Unit Design & Code Generation (backend unit complete)
+- [ ] Per-Unit Design & Code Generation (frontend unit - pending)
 - [ ] Build and Test
 
 ### 🟡 OPERATIONS PHASE

@@ -1,0 +1,33 @@
+# Environment / Secrets
+.env
+config/*.json
+
+# Data files
+data/*.db
+data/*.csv
+data/*.sqlite
+
+# Gradle
+backend/.gradle/
+backend/build/
+backend/gradle/wrapper/gradle-wrapper.jar
+!backend/gradle/wrapper/gradle-wrapper.properties
+backend/.gradle-dependency-locks/
+backend/dependency-locks/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

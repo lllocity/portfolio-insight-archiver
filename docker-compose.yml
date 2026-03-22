@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portfolio-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro
+    environment:
+      - DB_PATH=/data/portfolio.db
+      - CSV_ALLOWED_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JQUANTS_REFRESH_TOKEN=${JQUANTS_REFRESH_TOKEN}
+      - GOOGLE_SA_KEY_PATH=${GOOGLE_SA_KEY_PATH:-/config/sa-key.json}
+      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
+    networks:
+      - portfolio-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfolio-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    networks:
+      - portfolio-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  portfolio-net:
+    driver: bridge
