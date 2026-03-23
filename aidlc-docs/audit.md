@@ -1,5 +1,21 @@
 # AI-DLC Audit Log
 
+## Construction - Functional Design (frontend) - Complete
+**Timestamp**: 2026-03-24T00:01:00Z
+**User Input**: "回答しました（Q1:YES, Q2:A ドーナツ, Q3:B Tailwind, Q4:B 2選択差分, Q5:A デフォルトパス, Q6:A カラー, Q7:A 円フォーマット）"
+**AI Response**: domain-entities.md / business-rules.md / business-logic-model.md / frontend-components.md を生成。Tailwind CSS + Chart.js ドーナツ。不足3エンドポイントはコード生成時に追加。
+**Context**: Construction - frontend Functional Design 完了
+
+---
+
+## Construction - frontend unit 開始 - Functional Design
+**Timestamp**: 2026-03-24T00:00:00Z
+**User Input**: "A: はい、frontendユニットを開始する"
+**AI Response**: frontendユニットのConstruction Phase開始。Functional Design プランを作成。バックエンドAPIを調査し、不足エンドポイント3点（/api/snapshots, /api/snapshots/{date}/diff, /api/prompt/latest）を特定。ユーザーへの確認事項（Q1〜Q7）を frontend-functional-design-plan.md に記載。
+**Context**: Construction - frontend Functional Design 開始
+
+---
+
 ## Construction - Code Generation (backend) - Complete
 **Timestamp**: 2026-03-23T01:00:00Z
 **User Input**: "✅ Approve & Start Generation"
