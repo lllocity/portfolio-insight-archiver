@@ -20,6 +20,8 @@ public class LocalDateTimeConverter implements AttributeConverter<LocalDateTime,
 
     @Override
     public LocalDateTime convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : LocalDateTime.parse(dbData);
+        if (dbData == null) return null;
+        // SQLite が "YYYY-MM-DD HH:MM:SS" 形式（スペース区切り）で保存した古いデータにも対応
+        return LocalDateTime.parse(dbData.replace(' ', 'T'));
     }
 }
