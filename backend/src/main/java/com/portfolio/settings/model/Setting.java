@@ -1,5 +1,6 @@
 package com.portfolio.settings.model;
 
+import com.portfolio.common.converter.LocalDateTimeConverter;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class Setting {
     private String value;
 
     @Column(name = "updated_at", nullable = false)
+    @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime updatedAt;
 
     protected Setting() {}

@@ -1,5 +1,6 @@
 package com.portfolio.jquants.model;
 
+import com.portfolio.common.converter.LocalDateTimeConverter;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ public class StockMeta {
     private BigDecimal per;
 
     @Column(name = "cached_at", nullable = false)
+    @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime cachedAt;
 
     protected StockMeta() {}

@@ -1,5 +1,6 @@
 package com.portfolio.snapshot.model;
 
+import com.portfolio.common.converter.LocalDateTimeConverter;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ public class Snapshot {
     private Integer holdingCount;
 
     @Column(name = "created_at", nullable = false)
+    @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "snapshot", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

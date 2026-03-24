@@ -7,6 +7,11 @@
       <CsvImportForm @imported="onImported" />
     </div>
 
+    <!-- エラー -->
+    <div v-if="store.error" class="mb-4 rounded bg-red-50 p-3 text-xs text-red-700" data-testid="portfolio-error">
+      {{ store.error }}
+    </div>
+
     <!-- ローディング -->
     <div v-if="store.loading" class="flex justify-center py-12" data-testid="portfolio-loading">
       <span class="text-sm text-gray-500">読み込み中...</span>
