@@ -10,7 +10,7 @@ data/*.sqlite
 # Gradle
 backend/.gradle/
 backend/build/
-backend/gradle/wrapper/gradle-wrapper.jar
+!backend/gradle/wrapper/gradle-wrapper.jar
 !backend/gradle/wrapper/gradle-wrapper.properties
 backend/.gradle-dependency-locks/
 backend/dependency-locks/
