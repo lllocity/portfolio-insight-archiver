@@ -77,4 +77,14 @@ public class SnapshotService {
     public Optional<Snapshot> findLatestBefore(LocalDate date) {
         return snapshotRepository.findLatestBefore(date);
     }
+
+    @Transactional(readOnly = true)
+    public List<Snapshot> findAll() {
+        return snapshotRepository.findAllByOrderBySnapshotDateDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Snapshot> findByDate(LocalDate date) {
+        return snapshotRepository.findBySnapshotDate(date);
+    }
 }

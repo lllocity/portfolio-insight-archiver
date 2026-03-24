@@ -1,0 +1,60 @@
+<template>
+  <div class="min-h-screen bg-gray-50">
+    <!-- グローバルエラーバナー -->
+    <AppError :message="globalError" @close="globalError = null" />
+
+    <!-- ナビゲーション -->
+    <nav class="border-b border-gray-200 bg-white shadow-sm">
+      <div class="mx-auto max-w-7xl px-4">
+        <div class="flex h-12 items-center gap-1">
+          <span class="mr-4 text-sm font-bold text-gray-800">📊 Portfolio Insight</span>
+          <RouterLink
+            v-for="tab in tabs"
+            :key="tab.path"
+            :to="tab.path"
+            :data-testid="`nav-${tab.key}`"
+            class="rounded px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="$route.path === tab.path
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:bg-gray-100'"
+          >
+            {{ tab.label }}
+          </RouterLink>
+        </div>
+      </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="mx-auto max-w-7xl px-4 py-6">
+      <RouterView />
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { RouterLink, RouterView } from 'vue-router'
+import AppError from '@/components/AppError.vue'
+import { usePortfolioStore } from '@/stores/portfolioStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+
+const portfolioStore = usePortfolioStore()
+const settingsStore = useSettingsStore()
+const globalError = ref<string | null>(null)
+
+const tabs = [
+  { key: 'portfolio', path: '/portfolio', label: 'ポートフォリオ' },
+  { key: 'history', path: '/history', label: '履歴' },
+  { key: 'prompt', path: '/prompt', label: 'AIプロンプト' },
+  { key: 'settings', path: '/settings', label: '設定' }
+]
+
+onMounted(async () => {
+  await Promise.allSettled([
+    settingsStore.load(),
+    portfolioStore.load()
+  ])
+  if (portfolioStore.error) globalError.value = portfolioStore.error
+  if (settingsStore.error) globalError.value = settingsStore.error
+})
+</script>

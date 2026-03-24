@@ -6,11 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface SnapshotRepository extends JpaRepository<Snapshot, Long> {
 
     Optional<Snapshot> findBySnapshotDate(LocalDate snapshotDate);
+
+    List<Snapshot> findAllByOrderBySnapshotDateDesc();
 
     @Query("SELECT s FROM Snapshot s ORDER BY s.snapshotDate DESC LIMIT 1")
     Optional<Snapshot> findLatest();

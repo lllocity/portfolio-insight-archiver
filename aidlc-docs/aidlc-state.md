@@ -29,8 +29,8 @@
 
 ### 🟢 CONSTRUCTION PHASE
 - [x] Per-Unit Design & Code Generation (backend unit complete)
-- [ ] Per-Unit Design & Code Generation (frontend unit - pending)
-- [ ] Build and Test
+- [x] Per-Unit Design & Code Generation (frontend unit complete)
+- [x] Build and Test
 
 ### 🟡 OPERATIONS PHASE
 - [ ] Operations (Placeholder)
