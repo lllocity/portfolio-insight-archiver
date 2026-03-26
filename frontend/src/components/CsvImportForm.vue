@@ -28,15 +28,6 @@
     <!-- 成功メッセージ -->
     <div v-if="result?.success" class="mt-2 rounded bg-green-50 p-2 text-xs text-green-700" data-testid="csv-import-success">
       <p>{{ result.importedCount }} 銘柄を取り込みました（{{ result.snapshotDate }}）</p>
-      <a
-        v-if="result.docUrl"
-        :href="result.docUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-0.5 block underline"
-      >
-        Google Docs にアーカイブ済み →
-      </a>
     </div>
 
     <!-- 警告 -->

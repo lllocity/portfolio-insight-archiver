@@ -25,22 +25,6 @@
           <p class="mt-1 text-xs text-gray-500">CSVインポートフォームで使用するデフォルトのファイルパス</p>
         </div>
 
-        <!-- Google DriveフォルダID -->
-        <div>
-          <label for="googleDriveFolderId" class="mb-1 block text-sm font-medium text-gray-700">
-            Google Drive フォルダID
-          </label>
-          <input
-            id="googleDriveFolderId"
-            v-model="googleDriveFolderId"
-            type="text"
-            placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            data-testid="settings-drive-folder-id"
-          />
-          <p class="mt-1 text-xs text-gray-500">インポート結果をGoogle Docsにアーカイブする際の保存先フォルダID（省略時はルートに保存）</p>
-        </div>
-
         <!-- エラー -->
         <div v-if="store.error" class="rounded bg-red-50 p-3 text-xs text-red-700" data-testid="settings-error">
           {{ store.error }}
@@ -73,7 +57,6 @@ import { useSettingsStore } from '@/stores/settingsStore'
 
 const store = useSettingsStore()
 const csvDefaultPath = ref('')
-const googleDriveFolderId = ref('')
 const formReady = ref(false)
 const saved = ref(false)
 
@@ -83,7 +66,6 @@ watch(
   (s) => {
     if (s) {
       csvDefaultPath.value = s.csvDefaultPath ?? ''
-      googleDriveFolderId.value = s.googleDriveFolderId ?? ''
       formReady.value = true
     }
   },
@@ -100,8 +82,7 @@ async function handleSave() {
   saved.value = false
   try {
     await store.update({
-      csvDefaultPath: csvDefaultPath.value || null,
-      googleDriveFolderId: googleDriveFolderId.value || null
+      csvDefaultPath: csvDefaultPath.value || null
     })
     saved.value = true
     setTimeout(() => {

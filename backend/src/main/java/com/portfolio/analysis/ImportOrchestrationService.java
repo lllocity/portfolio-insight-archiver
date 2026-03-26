@@ -5,7 +5,6 @@ import com.portfolio.csv.CsvParserService;
 import com.portfolio.csv.CsvPathValidator;
 import com.portfolio.csv.dto.HoldingRecord;
 import com.portfolio.csv.dto.ImportResultDto;
-import com.portfolio.google.GoogleDocsArchiveService;
 import com.portfolio.jquants.JQuantsApiClient;
 import com.portfolio.jquants.model.StockMeta;
 import com.portfolio.prompt.AiPromptGeneratorService;
@@ -39,7 +38,6 @@ public class ImportOrchestrationService {
     private final JQuantsApiClient jQuantsApiClient;
     private final PortfolioAnalysisService analysisService;
     private final AiPromptGeneratorService promptGeneratorService;
-    private final GoogleDocsArchiveService googleDocsArchiveService;
 
     public ImportOrchestrationService(
         CsvPathValidator csvPathValidator,
@@ -47,8 +45,7 @@ public class ImportOrchestrationService {
         SnapshotService snapshotService,
         JQuantsApiClient jQuantsApiClient,
         PortfolioAnalysisService analysisService,
-        AiPromptGeneratorService promptGeneratorService,
-        GoogleDocsArchiveService googleDocsArchiveService
+        AiPromptGeneratorService promptGeneratorService
     ) {
         this.csvPathValidator = csvPathValidator;
         this.csvParserService = csvParserService;
@@ -56,7 +53,6 @@ public class ImportOrchestrationService {
         this.jQuantsApiClient = jQuantsApiClient;
         this.analysisService = analysisService;
         this.promptGeneratorService = promptGeneratorService;
-        this.googleDocsArchiveService = googleDocsArchiveService;
     }
 
     public ImportResultDto execute(String filePath) {
@@ -95,16 +91,7 @@ public class ImportOrchestrationService {
         // [6] Generate AI prompt
         String promptText = promptGeneratorService.generate(analysisResult);
 
-        // [7] Archive to Google Docs (graceful degradation on failure)
-        String docUrl = null;
-        try {
-            docUrl = googleDocsArchiveService.archive(snapshot, analysisResult, promptText);
-        } catch (Exception e) {
-            log.warn("Google Docs archive failed, continuing: {}", e.getMessage());
-            warnings.add("Google Docs archive was skipped: " + e.getMessage());
-        }
-
-        return new ImportResultDto(true, today, records.size(), docUrl, warnings.isEmpty() ? null : warnings);
+        return new ImportResultDto(true, today, records.size(), warnings.isEmpty() ? null : warnings);
     }
 
     /**

@@ -10,6 +10,5 @@ public record ImportResultDto(
     boolean success,
     LocalDate snapshotDate,
     int importedCount,
-    String docUrl,
     List<String> warnings
 ) {}

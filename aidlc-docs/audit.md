@@ -1,5 +1,30 @@
 # AI-DLC Audit Log
 
+## 仕様変更: Google Drive アーカイブ廃止 + 履歴ページ保有銘柄アコーディオン
+**Timestamp**: 2026-03-26T06:00:00Z
+**User Input**: "仕様の見直しをお願いします。Google Driveへのアーカイブ機能を廃止し、過去のアーカイブはFE上で閲覧できるようにする。データはSQLiteから取得したものを利用する。現状のDBのテーブル構成で表現できるものをまとめ、この方針での仕様の変更内容をまとめてください。"
+**AI Response**: 仕様変更内容をまとめ、実装を実施。
+**Context**: 変更理由: Googleサービスアカウントは個人Gmailのストレージクォータを持たないため、Google Docs/Drive APIへのファイル作成が原理的に不可能であることが判明。代替として、既存のSQLiteデータを活用したFE上での閲覧機能を実装。
+
+### 廃止したもの
+- `GoogleDocsArchiveService.java`（削除）
+- Google Docs/Drive API 依存ライブラリ（`build.gradle.kts` から削除）
+- `ImportResultDto.docUrl` フィールド
+- `GOOGLE_SA_KEY_PATH` / `GOOGLE_DRIVE_FOLDER_ID` 環境変数・設定
+- Settings画面のGoogle Drive フォルダID入力欄
+
+### 追加したもの
+- `GET /api/snapshots/{date}/holdings` エンドポイント（`SnapshotQueryController`）
+- `SnapshotHoldingDto` レコード
+- `frontend/src/api/snapshotHoldingsApi.ts`
+- HistoryPage のアコーディオン展開（行クリック → 保有銘柄詳細表示）
+
+### ドキュメント更新
+- `aidlc-docs/inception/requirements/requirements.md`: 2.5節をGoogle Docs→履歴閲覧に変更、2.6節の認証要件を縮小、技術スタック・シナリオ・除外スコープ更新
+- `aidlc-docs/construction/backend/functional-design/business-rules.md`: BR-GDOCSセクション削除、BR-ERR-02更新
+
+---
+
 ## Build and Test Stage
 **Timestamp**: 2026-03-25T10:00:00Z
 **User Input**: "はい、お願いします"

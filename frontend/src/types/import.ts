@@ -7,6 +7,5 @@ export interface ImportResult {
   success: boolean
   snapshotDate: string
   importedCount: number
-  docUrl: string | null
   warnings: string[] | null
 }

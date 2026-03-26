@@ -2,9 +2,13 @@ package com.portfolio.snapshot;
 
 import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.SnapshotDiff;
+import com.portfolio.jquants.StockMetaCacheRepository;
+import com.portfolio.jquants.model.StockMeta;
 import com.portfolio.portfolio.dto.PortfolioResponse.SnapshotDiffDto;
 import com.portfolio.portfolio.dto.PortfolioResponse.HoldingChangeDto;
+import com.portfolio.snapshot.dto.SnapshotHoldingDto;
 import com.portfolio.snapshot.dto.SnapshotListItemDto;
+import com.portfolio.snapshot.model.Holding;
 import com.portfolio.snapshot.model.Snapshot;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/snapshots")
@@ -20,11 +26,14 @@ public class SnapshotQueryController {
 
     private final SnapshotService snapshotService;
     private final PortfolioAnalysisService analysisService;
+    private final StockMetaCacheRepository stockMetaCacheRepository;
 
     public SnapshotQueryController(SnapshotService snapshotService,
-                                   PortfolioAnalysisService analysisService) {
+                                   PortfolioAnalysisService analysisService,
+                                   StockMetaCacheRepository stockMetaCacheRepository) {
         this.snapshotService = snapshotService;
         this.analysisService = analysisService;
+        this.stockMetaCacheRepository = stockMetaCacheRepository;
     }
 
     /** GET /api/snapshots — 全スナップショット一覧（日付降順）*/
@@ -40,6 +49,39 @@ public class SnapshotQueryController {
             ))
             .toList();
         return ResponseEntity.ok(items);
+    }
+
+    /** GET /api/snapshots/{date}/holdings — 指定日の保有銘柄一覧 */
+    @GetMapping("/{date}/holdings")
+    public ResponseEntity<List<SnapshotHoldingDto>> getHoldings(
+        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        Optional<Snapshot> snap = snapshotService.findByDate(date);
+        if (snap.isEmpty()) return ResponseEntity.notFound().build();
+
+        List<String> tickers = snap.get().getHoldings().stream()
+            .map(Holding::getTickerCode).toList();
+        Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(tickers).stream()
+            .collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
+
+        List<SnapshotHoldingDto> result = snap.get().getHoldings().stream().map(h -> {
+            StockMeta meta = metaMap.get(h.getTickerCode());
+            return new SnapshotHoldingDto(
+                h.getTickerCode(),
+                meta != null ? meta.getCompanyName() : null,
+                meta != null ? meta.getSector33Name() : null,
+                h.getTotalQuantity().toPlainString(),
+                h.getWeightedAvgPurchasePrice().toPlainString(),
+                h.getCurrentPrice().toPlainString(),
+                h.getDailyChange().toPlainString(),
+                h.getDailyChangePct().toPlainString(),
+                h.getTotalProfitLoss().toPlainString(),
+                h.getTotalProfitLossPct().toPlainString(),
+                h.getTotalValuation().toPlainString()
+            );
+        }).toList();
+
+        return ResponseEntity.ok(result);
     }
 
     /** GET /api/snapshots/diff?from={date}&to={date} — 2スナップショット間の差分 */

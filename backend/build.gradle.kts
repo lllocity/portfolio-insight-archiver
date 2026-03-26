@@ -42,14 +42,6 @@ dependencies {
     // CSV parsing (Shift-JIS / SBI証券)
     implementation("org.apache.commons:commons-csv:1.11.0")
 
-    // Google APIs (Docs + Drive + Service Account auth)
-    implementation("com.google.apis:google-api-services-docs:v1-rev20260309-2.0.0") {
-        exclude(group = "com.google.guava", module = "guava-jdk5")
-    }
-    implementation("com.google.apis:google-api-services-drive:v3-rev20260305-2.0.0") {
-        exclude(group = "com.google.guava", module = "guava-jdk5")
-    }
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")

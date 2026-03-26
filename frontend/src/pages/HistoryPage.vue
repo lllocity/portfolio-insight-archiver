@@ -15,7 +15,7 @@
 
     <template v-else>
       <p class="mb-3 text-xs text-gray-500">
-        2つのスナップショットを選択すると差分を表示します（3つ目を選択すると最初の選択が解除されます）
+        行をクリックすると保有銘柄を展開します。チェックボックスで2つ選択すると差分を表示します（3つ目を選択すると最初の選択が解除されます）
       </p>
 
       <!-- スナップショット一覧 -->
@@ -32,34 +32,85 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr
-              v-for="s in snapshots"
-              :key="s.snapshotDate"
-              data-testid="snapshot-row"
-              class="cursor-pointer hover:bg-gray-50"
-              :class="{ 'bg-blue-50': selectedDates.includes(s.snapshotDate) }"
-              @click="toggleSelect(s.snapshotDate)"
-            >
-              <td class="px-3 py-2">
-                <input
-                  type="checkbox"
-                  :checked="selectedDates.includes(s.snapshotDate)"
-                  class="rounded"
-                  :data-testid="`snapshot-checkbox-${s.snapshotDate}`"
-                  @click.stop
-                  @change="toggleSelect(s.snapshotDate)"
-                />
-              </td>
-              <td class="px-3 py-2 font-medium">{{ s.snapshotDate }}</td>
-              <td class="px-3 py-2 text-right">{{ f.formatCurrency(s.totalValuation) }}</td>
-              <td class="px-3 py-2 text-right" :class="f.colorClass(s.totalProfitLoss)">
-                {{ f.formatCurrency(s.totalProfitLoss) }}
-              </td>
-              <td class="px-3 py-2 text-right" :class="f.colorClass(s.totalProfitLossPct)">
-                {{ f.formatPct(s.totalProfitLossPct) }}
-              </td>
-              <td class="px-3 py-2 text-right text-gray-500">{{ s.holdingCount }}</td>
-            </tr>
+            <template v-for="s in snapshots" :key="s.snapshotDate">
+              <!-- スナップショット行 -->
+              <tr
+                data-testid="snapshot-row"
+                class="cursor-pointer hover:bg-gray-50"
+                :class="{ 'bg-blue-50': selectedDates.includes(s.snapshotDate) }"
+                @click="toggleExpand(s.snapshotDate)"
+              >
+                <td class="px-3 py-2" @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="selectedDates.includes(s.snapshotDate)"
+                    class="rounded"
+                    :data-testid="`snapshot-checkbox-${s.snapshotDate}`"
+                    @change="toggleSelect(s.snapshotDate)"
+                  />
+                </td>
+                <td class="px-3 py-2 font-medium">
+                  <span class="mr-1 text-xs text-gray-400">{{ expandedDate === s.snapshotDate ? '▲' : '▼' }}</span>
+                  {{ s.snapshotDate }}
+                </td>
+                <td class="px-3 py-2 text-right">{{ f.formatCurrency(s.totalValuation) }}</td>
+                <td class="px-3 py-2 text-right" :class="f.colorClass(s.totalProfitLoss)">
+                  {{ f.formatCurrency(s.totalProfitLoss) }}
+                </td>
+                <td class="px-3 py-2 text-right" :class="f.colorClass(s.totalProfitLossPct)">
+                  {{ f.formatPct(s.totalProfitLossPct) }}
+                </td>
+                <td class="px-3 py-2 text-right text-gray-500">{{ s.holdingCount }}</td>
+              </tr>
+
+              <!-- アコーディオン: 保有銘柄 -->
+              <tr v-if="expandedDate === s.snapshotDate">
+                <td colspan="6" class="bg-gray-50 p-0">
+                  <div class="px-4 py-3">
+                    <div v-if="holdingsLoading[s.snapshotDate]" class="py-2 text-center text-xs text-gray-500">
+                      読み込み中...
+                    </div>
+                    <div v-else-if="holdingsError[s.snapshotDate]" class="text-xs text-red-600">
+                      {{ holdingsError[s.snapshotDate] }}
+                    </div>
+                    <table v-else-if="holdingsCache[s.snapshotDate]?.length" class="w-full text-xs">
+                      <thead class="text-gray-500">
+                        <tr>
+                          <th class="pb-1 text-left font-medium">銘柄コード</th>
+                          <th class="pb-1 text-left font-medium">企業名</th>
+                          <th class="pb-1 text-left font-medium">セクター</th>
+                          <th class="pb-1 text-right font-medium">数量</th>
+                          <th class="pb-1 text-right font-medium">現在値</th>
+                          <th class="pb-1 text-right font-medium">前日比</th>
+                          <th class="pb-1 text-right font-medium">評価額</th>
+                          <th class="pb-1 text-right font-medium">損益</th>
+                          <th class="pb-1 text-right font-medium">損益率</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100">
+                        <tr v-for="h in holdingsCache[s.snapshotDate]" :key="h.tickerCode">
+                          <td class="py-1 font-mono">{{ h.tickerCode }}</td>
+                          <td class="py-1">{{ h.companyName ?? '-' }}</td>
+                          <td class="py-1 text-gray-500">{{ h.sector33Name ?? '-' }}</td>
+                          <td class="py-1 text-right">{{ h.totalQuantity }}</td>
+                          <td class="py-1 text-right">{{ f.formatCurrency(h.currentPrice) }}</td>
+                          <td class="py-1 text-right" :class="f.colorClass(h.dailyChange)">
+                            {{ f.formatPct(h.dailyChangePct) }}
+                          </td>
+                          <td class="py-1 text-right">{{ f.formatCurrency(h.totalValuation) }}</td>
+                          <td class="py-1 text-right" :class="f.colorClass(h.totalProfitLoss)">
+                            {{ f.formatCurrency(h.totalProfitLoss) }}
+                          </td>
+                          <td class="py-1 text-right" :class="f.colorClass(h.totalProfitLossPct)">
+                            {{ f.formatPct(h.totalProfitLossPct) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -89,6 +140,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { fetchSnapshots, fetchSnapshotDiff } from '@/api/snapshotApi'
+import { fetchSnapshotHoldings } from '@/api/snapshotHoldingsApi'
+import type { SnapshotHolding } from '@/api/snapshotHoldingsApi'
 import { useFormatters } from '@/composables/useFormatters'
 import DiffView from '@/components/DiffView.vue'
 import type { SnapshotListItem } from '@/types/snapshot'
@@ -102,7 +155,12 @@ const diff = ref<SnapshotDiff | null>(null)
 const diffLoading = ref(false)
 const diffError = ref<string | null>(null)
 
-// 古い方がfrom、新しい方がto
+// アコーディオン
+const expandedDate = ref<string | null>(null)
+const holdingsCache = ref<Record<string, SnapshotHolding[]>>({})
+const holdingsLoading = ref<Record<string, boolean>>({})
+const holdingsError = ref<Record<string, string>>({})
+
 const fromDate = computed(() =>
   selectedDates.value.length === 2
     ? [...selectedDates.value].sort()[0]
@@ -130,8 +188,25 @@ function toggleSelect(date: string) {
   } else if (selectedDates.value.length < 2) {
     selectedDates.value.push(date)
   } else {
-    // 3つ目の選択: 最初の選択を解除して新しいものを追加
     selectedDates.value = [selectedDates.value[1], date]
+  }
+}
+
+async function toggleExpand(date: string) {
+  if (expandedDate.value === date) {
+    expandedDate.value = null
+    return
+  }
+  expandedDate.value = date
+  if (holdingsCache.value[date]) return  // キャッシュ済みなら再フェッチしない
+  holdingsLoading.value[date] = true
+  holdingsError.value[date] = ''
+  try {
+    holdingsCache.value[date] = await fetchSnapshotHoldings(date)
+  } catch {
+    holdingsError.value[date] = '保有銘柄の取得に失敗しました'
+  } finally {
+    holdingsLoading.value[date] = false
   }
 }
 
