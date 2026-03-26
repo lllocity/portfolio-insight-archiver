@@ -38,7 +38,7 @@
             class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             data-testid="settings-drive-folder-id"
           />
-          <p class="mt-1 text-xs text-gray-500">Google DriveからCSVを取得する際に使用するフォルダID</p>
+          <p class="mt-1 text-xs text-gray-500">インポート結果をGoogle Docsにアーカイブする際の保存先フォルダID（省略時はルートに保存）</p>
         </div>
 
         <!-- エラー -->
