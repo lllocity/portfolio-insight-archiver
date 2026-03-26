@@ -85,6 +85,6 @@ public class SnapshotService {
 
     @Transactional(readOnly = true)
     public Optional<Snapshot> findByDate(LocalDate date) {
-        return snapshotRepository.findBySnapshotDate(date);
+        return snapshotRepository.findBySnapshotDateWithHoldings(date);
     }
 }
