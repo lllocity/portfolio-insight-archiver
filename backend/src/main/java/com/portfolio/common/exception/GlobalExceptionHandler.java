@@ -35,9 +35,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneral(Exception ex) {
-        // Do NOT expose stack trace or message to client (BR-ERR-03)
         log.error("Unexpected error", ex);
+        // 個人ツールのため根本原因をメッセージに含める（スタックトレースは除く）
+        String message = ex.getMessage() != null
+            ? ex.getClass().getSimpleName() + ": " + ex.getMessage()
+            : "予期しないエラーが発生しました";
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ApiErrorResponse.of(500, "INTERNAL_SERVER_ERROR", "An unexpected error occurred."));
+            .body(ApiErrorResponse.of(500, "INTERNAL_SERVER_ERROR", message));
     }
 }

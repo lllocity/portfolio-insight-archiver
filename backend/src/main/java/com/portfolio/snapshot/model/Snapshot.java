@@ -1,5 +1,6 @@
 package com.portfolio.snapshot.model;
 
+import com.portfolio.common.converter.LocalDateConverter;
 import com.portfolio.common.converter.LocalDateTimeConverter;
 import jakarta.persistence.*;
 
@@ -18,6 +19,7 @@ public class Snapshot {
     private Long id;
 
     @Column(name = "snapshot_date", nullable = false, unique = true)
+    @Convert(converter = LocalDateConverter.class)
     private LocalDate snapshotDate;
 
     @Column(name = "total_valuation", nullable = false)

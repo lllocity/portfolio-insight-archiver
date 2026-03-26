@@ -1,5 +1,6 @@
 package com.portfolio.jquants.model;
 
+import com.portfolio.common.converter.LocalDateConverter;
 import com.portfolio.common.converter.LocalDateTimeConverter;
 import jakarta.persistence.*;
 
@@ -31,6 +32,7 @@ public class StockMeta {
     private BigDecimal marketCap;
 
     @Column(name = "earnings_date")
+    @Convert(converter = LocalDateConverter.class)
     private LocalDate earningsDate;
 
     @Column(name = "pbr")
