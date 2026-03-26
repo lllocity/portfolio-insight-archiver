@@ -25,6 +25,7 @@ import java.util.*;
  * <p>The SBI CSV has multiple sections per file:
  * <ul>
  *   <li>特定口座 / 一般口座 (cash positions)  — column "取得単価"</li>
+ *   <li>一般口座 (general account positions)   — column "参考単価"</li>
  *   <li>信用建玉 (margin positions)           — column "建単価"</li>
  *   <li>NISA口座 (NISA positions)             — column "取得単価"</li>
  *   <li>投資信託 (mutual funds)               — column header "ファンド名" → skipped</li>
@@ -43,6 +44,8 @@ public class CsvParserService {
     private static final String COL_TICKER = "銘柄（コード）";
     /** Column name for purchase price in cash/NISA accounts. */
     private static final String COL_PURCHASE_PRICE = "取得単価";
+    /** Column name for reference price in general (一般預り) accounts. */
+    private static final String COL_REFERENCE_PRICE = "参考単価";
     /** Column name for trade price in margin/credit accounts. */
     private static final String COL_CREDIT_PRICE = "建単価";
     /** Column header that marks the mutual-fund section. */
@@ -190,6 +193,7 @@ public class CsvParserService {
      */
     private String resolvePriceColumn(List<String> headers) {
         if (headers.contains(COL_PURCHASE_PRICE)) return COL_PURCHASE_PRICE;
+        if (headers.contains(COL_REFERENCE_PRICE)) return COL_REFERENCE_PRICE;
         if (headers.contains(COL_CREDIT_PRICE)) return COL_CREDIT_PRICE;
         return null;
     }
