@@ -41,7 +41,8 @@ public class JQuantsApiClient {
 
     /**
      * Fetches metadata for the given ticker codes.
-     * Uses SQLite 24-hour cache first; fetches only stale/missing entries from API.
+     * Checks SQLite cache first; if any are stale/missing, fetches ALL listed stocks
+     * in a single API call and saves only the needed ones.
      * Returns empty list (not an error) if API key is not configured.
      */
     public List<StockMeta> fetchMetadata(List<String> tickerCodes) {
@@ -73,7 +74,8 @@ public class JQuantsApiClient {
             .toList();
 
         if (!staleCodes.isEmpty()) {
-            fetchAndCache(staleCodes, apiKey, validCache);
+            // Fetch ALL listed stocks in one API call, save only what we need
+            fetchAllAndCache(new HashSet<>(staleCodes), apiKey, validCache);
         }
 
         return stockCodes.stream()
@@ -82,50 +84,46 @@ public class JQuantsApiClient {
             .toList();
     }
 
-    private void fetchAndCache(List<String> tickerCodes, String apiKey,
-                                Map<String, StockMeta> validCache) {
-        for (String code : tickerCodes) {
-            try {
-                Map<?, ?> response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                        .path("/v2/equities/master")
-                        .queryParam("code", code)
-                        .build())
-                    .header("x-api-key", apiKey)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(timeoutSeconds))
-                    .block();
+    @SuppressWarnings("unchecked")
+    private void fetchAllAndCache(Set<String> targetCodes, String apiKey,
+                                   Map<String, StockMeta> validCache) {
+        try {
+            log.info("Fetching all listed stocks from J-Quants /v2/equities/master...");
+            Map<?, ?> response = webClient.get()
+                .uri("/v2/equities/master")
+                .header("x-api-key", apiKey)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 30)))
+                .block();
 
-                StockMeta meta = parseStockMeta(code, response);
+            List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+            if (data == null) return;
+
+            int saved = 0;
+            for (Map<String, Object> item : data) {
+                String rawCode = getString(item, "Code");
+                if (rawCode == null) continue;
+                // API returns 5-digit codes (e.g. "72030"), normalize to 4-digit
+                String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
+                if (!targetCodes.contains(code)) continue;
+
+                StockMeta meta = new StockMeta(
+                    code,
+                    getString(item, "CoName"),
+                    getString(item, "S33"),
+                    getString(item, "S33Nm"),
+                    null, null, null, null, null
+                );
                 cacheRepository.save(meta);
                 validCache.put(code, meta);
-
-            } catch (Exception e) {
-                log.warn("Failed to fetch J-Quants metadata for ticker {}: {}", code, e.getMessage());
+                saved++;
             }
-        }
-    }
+            log.info("Saved {} stock metadata entries to cache.", saved);
 
-    @SuppressWarnings("unchecked")
-    private StockMeta parseStockMeta(String tickerCode, Map<?, ?> response) {
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-        if (data == null || data.isEmpty()) {
-            return new StockMeta(tickerCode, null, null, null, null, null, null, null, null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch J-Quants master data: {}", e.getMessage());
         }
-
-        Map<String, Object> item = data.get(0);
-        return new StockMeta(
-            tickerCode,
-            getString(item, "CoName"),
-            getString(item, "S33"),
-            getString(item, "S33Nm"),
-            null,   // dividendYield: not available in /v2/equities/master
-            null,   // marketCap: not available in /v2/equities/master
-            null,   // earningsDate: not available in /v2/equities/master
-            null,   // pbr: not available in /v2/equities/master
-            null    // per: not available in /v2/equities/master
-        );
     }
 
     private String getString(Map<String, Object> map, String key) {
