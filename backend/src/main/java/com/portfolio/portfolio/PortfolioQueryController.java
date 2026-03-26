@@ -2,15 +2,13 @@ package com.portfolio.portfolio;
 
 import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.*;
-import com.portfolio.jquants.JQuantsApiClient;
+import com.portfolio.jquants.StockMetaCacheRepository;
 import com.portfolio.jquants.model.StockMeta;
 import com.portfolio.portfolio.dto.PortfolioResponse;
 import com.portfolio.portfolio.dto.PortfolioResponse.*;
 import com.portfolio.snapshot.SnapshotService;
 import com.portfolio.snapshot.model.Holding;
 import com.portfolio.snapshot.model.Snapshot;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,19 +19,17 @@ import java.util.Optional;
 @RequestMapping("/api/portfolio")
 public class PortfolioQueryController {
 
-    private static final Logger log = LoggerFactory.getLogger(PortfolioQueryController.class);
-
     private final SnapshotService snapshotService;
-    private final JQuantsApiClient jQuantsApiClient;
+    private final StockMetaCacheRepository stockMetaCacheRepository;
     private final PortfolioAnalysisService analysisService;
 
     public PortfolioQueryController(
         SnapshotService snapshotService,
-        JQuantsApiClient jQuantsApiClient,
+        StockMetaCacheRepository stockMetaCacheRepository,
         PortfolioAnalysisService analysisService
     ) {
         this.snapshotService = snapshotService;
-        this.jQuantsApiClient = jQuantsApiClient;
+        this.stockMetaCacheRepository = stockMetaCacheRepository;
         this.analysisService = analysisService;
     }
 
@@ -49,13 +45,7 @@ public class PortfolioQueryController {
         List<String> tickerCodes = snapshot.getHoldings().stream()
             .map(Holding::getTickerCode).toList();
 
-        List<StockMeta> metaList;
-        try {
-            metaList = jQuantsApiClient.fetchMetadata(tickerCodes);
-        } catch (Exception e) {
-            log.warn("J-Quants unavailable on portfolio query, continuing without metadata: {}", e.getMessage());
-            metaList = List.of();
-        }
+        List<StockMeta> metaList = stockMetaCacheRepository.findAllByTickerCodeIn(tickerCodes);
 
         List<EnrichedHolding> enriched = analysisService.mergeWithMeta(snapshot.getHoldings(), metaList);
         List<SectorAllocation> sectors = analysisService.analyzeSectorAllocation(enriched);
