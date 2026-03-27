@@ -2,6 +2,7 @@ package com.portfolio.snapshot;
 
 import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.SnapshotDiff;
+import com.portfolio.jquants.StockMetaCacheRepository;
 import com.portfolio.snapshot.dto.SnapshotListItemDto;
 import com.portfolio.snapshot.model.Snapshot;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,13 +20,15 @@ class SnapshotQueryControllerTest {
 
     private SnapshotService snapshotService;
     private PortfolioAnalysisService analysisService;
+    private StockMetaCacheRepository stockMetaCacheRepository;
     private SnapshotQueryController controller;
 
     @BeforeEach
     void setUp() {
         snapshotService = mock(SnapshotService.class);
         analysisService = mock(PortfolioAnalysisService.class);
-        controller = new SnapshotQueryController(snapshotService, analysisService);
+        stockMetaCacheRepository = mock(StockMetaCacheRepository.class);
+        controller = new SnapshotQueryController(snapshotService, analysisService, stockMetaCacheRepository);
     }
 
     @Test
