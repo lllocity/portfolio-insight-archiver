@@ -4,8 +4,9 @@ import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.SnapshotDiff;
 import com.portfolio.jquants.StockMetaCacheRepository;
 import com.portfolio.jquants.model.StockMeta;
-import com.portfolio.portfolio.dto.PortfolioResponse.SnapshotDiffDto;
 import com.portfolio.portfolio.dto.PortfolioResponse.HoldingChangeDto;
+import com.portfolio.portfolio.dto.PortfolioResponse.SnapshotDiffDto;
+import com.portfolio.portfolio.dto.PortfolioResponse.TickerSummaryDto;
 import com.portfolio.snapshot.dto.SnapshotHoldingDto;
 import com.portfolio.snapshot.dto.SnapshotListItemDto;
 import com.portfolio.snapshot.model.Holding;
@@ -15,9 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -99,13 +98,34 @@ public class SnapshotQueryController {
 
         SnapshotDiff diff = analysisService.calculateDiff(toSnap.get(), Optional.of(fromSnap.get()));
 
+        // Load meta for all relevant tickers (added, removed, changed)
+        Set<String> allTickers = new HashSet<>();
+        diff.addedHoldings().forEach(h -> allTickers.add(h.getTickerCode()));
+        diff.removedHoldings().forEach(h -> allTickers.add(h.getTickerCode()));
+        diff.changedHoldings().forEach(c -> allTickers.add(c.tickerCode()));
+        Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(List.copyOf(allTickers))
+            .stream().collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
+
         SnapshotDiffDto dto = new SnapshotDiffDto(
-            diff.addedHoldings().stream().map(h -> h.getTickerCode()).toList(),
-            diff.removedHoldings().stream().map(h -> h.getTickerCode()).toList(),
-            diff.changedHoldings().stream().map(c ->
-                new HoldingChangeDto(c.tickerCode(), c.quantityDiff().toPlainString(),
-                    c.valuationDiff().toPlainString())
-            ).toList(),
+            diff.addedHoldings().stream().map(h -> {
+                StockMeta m = metaMap.get(h.getTickerCode());
+                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
+            }).toList(),
+            diff.removedHoldings().stream().map(h -> {
+                StockMeta m = metaMap.get(h.getTickerCode());
+                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
+            }).toList(),
+            diff.changedHoldings().stream().map(c -> {
+                StockMeta m = metaMap.get(c.tickerCode());
+                return new HoldingChangeDto(
+                    c.tickerCode(),
+                    m != null ? m.getCompanyName() : null,
+                    c.previous().getTotalQuantity().toPlainString(),
+                    c.current().getTotalQuantity().toPlainString(),
+                    c.quantityDiff().toPlainString(),
+                    c.valuationDiff().toPlainString()
+                );
+            }).toList(),
             diff.valuationChange().toPlainString(),
             diff.profitLossChange().toPlainString()
         );

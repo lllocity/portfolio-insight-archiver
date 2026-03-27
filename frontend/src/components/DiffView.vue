@@ -19,12 +19,12 @@
         <p class="text-xs font-medium text-gray-500 mb-1">新規追加</p>
         <div class="flex flex-wrap gap-1">
           <span
-            v-for="ticker in diff.addedTickers"
-            :key="ticker"
+            v-for="t in diff.addedTickers"
+            :key="t.tickerCode"
             data-testid="diff-added-ticker"
             class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
           >
-            + {{ ticker }}
+            + {{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
           </span>
         </div>
       </div>
@@ -34,12 +34,12 @@
         <p class="text-xs font-medium text-gray-500 mb-1">除去</p>
         <div class="flex flex-wrap gap-1">
           <span
-            v-for="ticker in diff.removedTickers"
-            :key="ticker"
+            v-for="t in diff.removedTickers"
+            :key="t.tickerCode"
             data-testid="diff-removed-ticker"
             class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
           >
-            - {{ ticker }}
+            - {{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
           </span>
         </div>
       </div>
@@ -51,7 +51,7 @@
           <thead>
             <tr class="border-b border-gray-100 text-gray-500">
               <th class="pb-1 text-left font-medium">銘柄</th>
-              <th class="pb-1 text-right font-medium">数量変化</th>
+              <th class="pb-1 text-right font-medium">数量</th>
               <th class="pb-1 text-right font-medium">評価額変化</th>
             </tr>
           </thead>
@@ -62,9 +62,19 @@
               data-testid="diff-changed-row"
               class="border-b border-gray-50"
             >
-              <td class="py-1">{{ item.tickerCode }}</td>
-              <td class="py-1 text-right" :class="formatters.colorClass(item.quantityDiff)">
-                {{ item.quantityDiff }}
+              <td class="py-1">
+                <span class="font-mono font-medium">{{ item.tickerCode }}</span>
+                <span v-if="item.companyName" class="ml-1 text-gray-500">{{ item.companyName }}</span>
+              </td>
+              <td class="py-1 text-right text-gray-700">
+                {{ item.quantityBefore }}
+                <span class="text-gray-400">→</span>
+                {{ item.quantityAfter }}
+                <span
+                  v-if="item.quantityDiff !== '0'"
+                  class="ml-1"
+                  :class="formatters.colorClass(item.quantityDiff)"
+                >({{ item.quantityDiff }})</span>
               </td>
               <td class="py-1 text-right" :class="formatters.colorClass(item.valuationDiff)">
                 {{ formatters.formatCurrency(item.valuationDiff) }}

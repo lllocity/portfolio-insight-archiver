@@ -30,15 +30,23 @@ export interface SectorAllocation {
   holdingCount: number
 }
 
+export interface TickerSummary {
+  tickerCode: string
+  companyName: string | null
+}
+
 export interface HoldingChange {
   tickerCode: string
+  companyName: string | null
+  quantityBefore: string
+  quantityAfter: string
   quantityDiff: string
   valuationDiff: string
 }
 
 export interface SnapshotDiff {
-  addedTickers: string[]
-  removedTickers: string[]
+  addedTickers: TickerSummary[]
+  removedTickers: TickerSummary[]
   changed: HoldingChange[]
   valuationChange: string
   profitLossChange: string
