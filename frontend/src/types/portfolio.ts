@@ -21,9 +21,6 @@ export interface EnrichedHolding {
   totalProfitLoss: string
   totalProfitLossPct: string
   totalValuation: string
-  dividendYield: string | null
-  pbr: string | null
-  per: string | null
 }
 
 export interface SectorAllocation {

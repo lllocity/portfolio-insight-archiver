@@ -79,10 +79,7 @@ public class PortfolioQueryController {
                 h.getDailyChangePct().toPlainString(),
                 h.getTotalProfitLoss().toPlainString(),
                 h.getTotalProfitLossPct().toPlainString(),
-                h.getTotalValuation().toPlainString(),
-                m != null && m.getDividendYield() != null ? m.getDividendYield().toPlainString() : null,
-                m != null && m.getPbr() != null ? m.getPbr().toPlainString() : null,
-                m != null && m.getPer() != null ? m.getPer().toPlainString() : null
+                h.getTotalValuation().toPlainString()
             );
         }).toList();
 

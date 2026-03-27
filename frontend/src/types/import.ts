@@ -1,8 +1,4 @@
-// POST /api/csv/import のリクエスト・レスポンス型
-export interface CsvImportRequest {
-  filePath: string
-}
-
+// POST /api/csv/import のレスポンス型
 export interface ImportResult {
   success: boolean
   snapshotDate: string

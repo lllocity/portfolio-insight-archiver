@@ -1,19 +1,16 @@
 package com.portfolio.analysis;
 
-import com.portfolio.analysis.dto.*;
 import com.portfolio.csv.CsvParserService;
 import com.portfolio.csv.CsvPathValidator;
 import com.portfolio.csv.dto.HoldingRecord;
 import com.portfolio.csv.dto.ImportResultDto;
 import com.portfolio.jquants.JQuantsApiClient;
-import com.portfolio.jquants.model.StockMeta;
-import com.portfolio.prompt.AiPromptGeneratorService;
 import com.portfolio.snapshot.SnapshotService;
-import com.portfolio.snapshot.model.Snapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
@@ -21,7 +18,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Orchestrates the full CSV import flow (BL-01).
@@ -36,60 +32,43 @@ public class ImportOrchestrationService {
     private final CsvParserService csvParserService;
     private final SnapshotService snapshotService;
     private final JQuantsApiClient jQuantsApiClient;
-    private final PortfolioAnalysisService analysisService;
-    private final AiPromptGeneratorService promptGeneratorService;
 
     public ImportOrchestrationService(
         CsvPathValidator csvPathValidator,
         CsvParserService csvParserService,
         SnapshotService snapshotService,
-        JQuantsApiClient jQuantsApiClient,
-        PortfolioAnalysisService analysisService,
-        AiPromptGeneratorService promptGeneratorService
+        JQuantsApiClient jQuantsApiClient
     ) {
         this.csvPathValidator = csvPathValidator;
         this.csvParserService = csvParserService;
         this.snapshotService = snapshotService;
         this.jQuantsApiClient = jQuantsApiClient;
-        this.analysisService = analysisService;
-        this.promptGeneratorService = promptGeneratorService;
     }
 
+    public ImportResultDto executeFromUpload(InputStream csvStream) {
+        return executeWithRecords(csvParserService.parse(csvStream));
+    }
+
+    /** Kept for potential CLI/test use. */
     public ImportResultDto execute(String filePath) {
+        Path validatedPath = csvPathValidator.validate(filePath);
+        return executeWithRecords(csvParserService.parse(validatedPath));
+    }
+
+    private ImportResultDto executeWithRecords(List<HoldingRecord> records) {
         List<String> warnings = new ArrayList<>();
         LocalDate today = LocalDate.now(JST);
 
-        // [1] Validate path and parse CSV
-        Path validatedPath = csvPathValidator.validate(filePath);
-        List<HoldingRecord> records = csvParserService.parse(validatedPath);
-
-        // [2] Fetch previous snapshot for diff
-        Optional<Snapshot> previousSnapshot = snapshotService.findLatestBefore(today);
-
-        // [3] Fetch J-Quants metadata (graceful degradation on failure)
+        // Populate stock_meta_cache; PortfolioQueryController reads from cache at display time
         List<String> tickerCodes = records.stream().map(HoldingRecord::tickerCode).toList();
-        List<StockMeta> metaList;
         try {
-            metaList = jQuantsApiClient.fetchMetadata(tickerCodes);
+            jQuantsApiClient.fetchMetadata(tickerCodes);
         } catch (Exception e) {
             log.warn("J-Quants API unavailable, continuing without metadata: {}", e.getMessage());
             warnings.add("J-Quants API is unavailable. Stock metadata will not be included.");
-            metaList = List.of();
         }
 
-        // [4] Build snapshot entity (save first to get IDs)
-        Snapshot snapshot = snapshotService.save(today, records);
-
-        // [5] Analysis
-        List<EnrichedHolding> enriched = analysisService.mergeWithMeta(snapshot.getHoldings(), metaList);
-        List<SectorAllocation> sectors = analysisService.analyzeSectorAllocation(enriched);
-        PortfolioSummary summary = analysisService.summarize(snapshot, sectors);
-        SnapshotDiff diff = analysisService.calculateDiff(snapshot, previousSnapshot);
-
-        PortfolioAnalysisResult analysisResult = new PortfolioAnalysisResult(summary, enriched, sectors, diff);
-
-        // [6] Generate AI prompt
-        String promptText = promptGeneratorService.generate(analysisResult);
+        snapshotService.save(today, records);
 
         return new ImportResultDto(true, today, records.size(), warnings.isEmpty() ? null : warnings);
     }

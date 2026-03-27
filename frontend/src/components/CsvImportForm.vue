@@ -1,19 +1,28 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4" data-testid="csv-import-form">
     <h3 class="mb-3 text-sm font-semibold text-gray-700">CSVインポート</h3>
-    <div class="flex gap-2">
-      <input
-        v-model="filePath"
-        data-testid="csv-import-path-input"
-        type="text"
-        placeholder="/data/New_file.csv"
-        class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-        :disabled="loading"
-      />
+    <div class="flex items-center gap-2">
+      <label
+        class="cursor-pointer rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+        :class="{ 'opacity-50 pointer-events-none': loading }"
+      >
+        ファイルを選択
+        <input
+          type="file"
+          accept=".csv"
+          class="hidden"
+          data-testid="csv-import-file-input"
+          :disabled="loading"
+          @change="onFileChange"
+        />
+      </label>
+      <span class="flex-1 truncate text-sm text-gray-500">
+        {{ selectedFile?.name ?? '選択されていません' }}
+      </span>
       <button
         data-testid="csv-import-button"
         class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        :disabled="loading || !filePath.trim()"
+        :disabled="loading || !selectedFile"
         @click="handleImport"
       >
         {{ loading ? '取り込み中...' : 'インポート' }}
@@ -38,33 +47,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useSettingsStore } from '@/stores/settingsStore'
+import { ref } from 'vue'
 import { importCsv } from '@/api/csvApi'
 import type { ImportResult } from '@/types/import'
 
 const emit = defineEmits<{ imported: [] }>()
 
-const settingsStore = useSettingsStore()
-const filePath = ref('')
+const selectedFile = ref<File | null>(null)
 const loading = ref(false)
 const result = ref<ImportResult | null>(null)
 const validationError = ref('')
 
-onMounted(() => {
-  filePath.value = settingsStore.settings?.csvDefaultPath ?? ''
-})
+function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  selectedFile.value = input.files?.[0] ?? null
+  result.value = null
+  validationError.value = ''
+}
 
 async function handleImport() {
   validationError.value = ''
-  if (!filePath.value.trim()) {
-    validationError.value = 'ファイルパスを入力してください'
+  if (!selectedFile.value) {
+    validationError.value = 'CSVファイルを選択してください'
     return
   }
   loading.value = true
   result.value = null
   try {
-    result.value = await importCsv({ filePath: filePath.value.trim() })
+    result.value = await importCsv(selectedFile.value)
     emit('imported')
   } catch (e: unknown) {
     validationError.value = (e as { message?: string })?.message ?? 'インポートに失敗しました'

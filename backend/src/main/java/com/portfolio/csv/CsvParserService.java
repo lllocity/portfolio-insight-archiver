@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.Charset;
@@ -62,6 +64,14 @@ public class CsvParserService {
             return parseMultiSection(reader);
         } catch (IOException e) {
             throw new CsvParseException("Failed to read CSV file: " + e.getMessage(), e);
+        }
+    }
+
+    public List<HoldingRecord> parse(InputStream inputStream) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, SHIFT_JIS))) {
+            return parseMultiSection(reader);
+        } catch (IOException e) {
+            throw new CsvParseException("Failed to read CSV stream: " + e.getMessage(), e);
         }
     }
 

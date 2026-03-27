@@ -31,9 +31,6 @@
           >
             損益率 {{ sortIcon('totalProfitLossPct') }}
           </th>
-          <th scope="col" class="px-3 py-2 text-right font-medium">配当利回り</th>
-          <th scope="col" class="px-3 py-2 text-right font-medium">PBR</th>
-          <th scope="col" class="px-3 py-2 text-right font-medium">PER</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
@@ -44,7 +41,16 @@
           class="hover:bg-gray-50"
         >
           <td class="px-3 py-2 font-mono font-medium">{{ h.tickerCode }}</td>
-          <td class="px-3 py-2 text-gray-700">{{ f.nullish(h.companyName) }}</td>
+          <td class="px-3 py-2 text-gray-700">
+            <a
+              v-if="h.companyName && /^\d{4}$/.test(h.tickerCode)"
+              :href="`https://finance.yahoo.co.jp/quote/${h.tickerCode}.T`"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-blue-600 hover:underline"
+            >{{ h.companyName }}</a>
+            <span v-else>{{ f.nullish(h.companyName) }}</span>
+          </td>
           <td class="px-3 py-2">
             <span
               v-if="h.sectorName === '投資信託'"
@@ -60,9 +66,6 @@
           <td class="px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
           </td>
-          <td class="px-3 py-2 text-right">{{ f.nullish(h.dividendYield) }}</td>
-          <td class="px-3 py-2 text-right">{{ f.nullish(h.pbr) }}</td>
-          <td class="px-3 py-2 text-right">{{ f.nullish(h.per) }}</td>
         </tr>
       </tbody>
     </table>

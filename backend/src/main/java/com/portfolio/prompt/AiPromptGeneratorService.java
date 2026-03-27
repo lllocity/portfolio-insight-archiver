@@ -35,8 +35,8 @@ public class AiPromptGeneratorService {
 
         // Section 2: Holdings with metrics
         sb.append("## 2. 保有銘柄・指標データ\n");
-        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) | 配当利回り(%) | PBR | PER |\n");
-        sb.append("|---|---|---|---|---|---|---|---|---|\n");
+        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) |\n");
+        sb.append("|---|---|---|---|---|---|\n");
 
         for (EnrichedHolding eh : analysis.enrichedHoldings()) {
             Holding h = eh.holding();
@@ -46,12 +46,9 @@ public class AiPromptGeneratorService {
             sb.append(eh.getSectorName()).append(" | ");
             sb.append(h.getTotalQuantity()).append(" | ");
             sb.append(JPY_FORMAT.format(h.getTotalValuation())).append(" | ");
-            sb.append(h.getTotalProfitLossPct()).append(" | ");
-            sb.append(meta != null ? nvlDecimal(meta.getDividendYield()) : "-").append(" | ");
-            sb.append(meta != null ? nvlDecimal(meta.getPbr()) : "-").append(" | ");
-            sb.append(meta != null ? nvlDecimal(meta.getPer()) : "-").append(" |\n");
+            sb.append(h.getTotalProfitLossPct()).append(" |\n");
         }
-        sb.append("※ PBR/PERは取得できた場合のみ表示\n\n");
+        sb.append("\n");
 
         // Section 3: Sector allocation
         sb.append("## 3. セクター別構成比\n");
@@ -122,7 +119,4 @@ public class AiPromptGeneratorService {
         return s != null ? s : "-";
     }
 
-    private String nvlDecimal(BigDecimal d) {
-        return d != null ? d.toPlainString() : "-";
-    }
 }
