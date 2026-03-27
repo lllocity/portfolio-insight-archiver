@@ -10,14 +10,11 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/data
-      - ./config:/config:ro
     environment:
       - DB_PATH=/data/portfolio.db
       - CSV_ALLOWED_DIR=/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JQUANTS_REFRESH_TOKEN=${JQUANTS_REFRESH_TOKEN}
-      - GOOGLE_SA_KEY_PATH=${GOOGLE_SA_KEY_PATH:-/config/sa-key.json}
-      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
+      - JQUANTS_API_KEY=${JQUANTS_API_KEY}
     networks:
       - portfolio-net
     healthcheck:
@@ -44,7 +41,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_BASE_URL=http://localhost:8080
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
     networks:
       - portfolio-net
     depends_on:

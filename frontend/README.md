@@ -45,7 +45,6 @@ npm run type-check
 | `/portfolio` | PortfolioPage | 最新スナップショット表示・CSVインポート |
 | `/history` | HistoryPage | 履歴一覧・スナップショット差分比較 |
 | `/prompt` | PromptPage | AI分析用プロンプト生成・コピー |
-| `/settings` | SettingsPage | CSVパス・Google DriveフォルダID設定 |
 
 ## プロジェクト構造
 
@@ -69,7 +68,33 @@ frontend/
 
 ```bash
 # ルートディレクトリから全サービスを起動
-docker compose up --build
+docker compose up --build -d
 ```
 
 フロントエンドは `http://localhost:5173` で公開されます。
+
+## 別端末からのアクセス
+
+同一WiFiネットワーク上の別端末からアクセスする場合は、ホストマシンのIPアドレスに合わせた設定が必要です。
+
+### 1. ホストマシンのIPアドレスを確認
+
+```bash
+ipconfig getifaddr en0
+```
+
+例: `192.168.1.10`
+
+### 2. ルートの .env を更新
+
+```env
+VITE_API_BASE_URL=http://192.168.1.10:8080
+```
+
+### 3. 再ビルドして起動
+
+```bash
+docker compose up --build -d
+```
+
+別端末のブラウザから `http://192.168.1.10:5173` でアクセスできます。
