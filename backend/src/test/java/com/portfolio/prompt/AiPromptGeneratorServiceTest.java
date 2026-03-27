@@ -3,7 +3,6 @@ package com.portfolio.prompt;
 import com.portfolio.analysis.dto.*;
 import com.portfolio.jquants.model.StockMeta;
 import com.portfolio.snapshot.model.Holding;
-import com.portfolio.snapshot.model.Snapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
