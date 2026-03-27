@@ -12,25 +12,11 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(CsvNotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleCsvNotFound(CsvNotFoundException ex) {
-        log.warn("CSV file not found: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ApiErrorResponse.of(404, "NOT_FOUND", ex.getMessage()));
-    }
-
     @ExceptionHandler(CsvParseException.class)
     public ResponseEntity<ApiErrorResponse> handleCsvParse(CsvParseException ex) {
         log.warn("CSV parse error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
             .body(ApiErrorResponse.of(422, "CSV_PARSE_ERROR", ex.getMessage()));
-    }
-
-    @ExceptionHandler(PathSecurityException.class)
-    public ResponseEntity<ApiErrorResponse> handlePathSecurity(PathSecurityException ex) {
-        log.warn("Path security violation: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiErrorResponse.of(400, "INVALID_PATH", "Invalid file path specified."));
     }
 
     @ExceptionHandler(Exception.class)

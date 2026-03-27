@@ -1,17 +1,14 @@
 package com.portfolio.csv;
 
-import com.portfolio.common.exception.CsvNotFoundException;
 import com.portfolio.common.exception.CsvParseException;
 import com.portfolio.csv.dto.HoldingRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -30,9 +27,6 @@ class CsvParserServiceTest {
 
     private CsvParserService parser;
 
-    @TempDir
-    Path tempDir;
-
     @BeforeEach
     void setUp() {
         parser = new CsvParserService();
@@ -41,12 +35,11 @@ class CsvParserServiceTest {
     // ── Single section, single ticker ──────────────────────────────────────
 
     @Test
-    void parse_singleTicker_returnsOneRecord() throws IOException {
-        String csv = singleSectionHeader() +
-                     "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n";
-        Path file = writeCsv(csv);
+    void parse_singleTicker_returnsOneRecord() {
+        InputStream csv = csvStream(singleSectionHeader() +
+                     "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(1);
         HoldingRecord r = records.get(0);
@@ -59,15 +52,14 @@ class CsvParserServiceTest {
     // ── Aggregation: same ticker in same section ───────────────────────────
 
     @Test
-    void parse_sameTicker_aggregatesRows() throws IOException {
+    void parse_sameTicker_aggregatesRows() {
         // 7203: 100 @ 2500 + 50 @ 2600
         // totalQty=150, totalCost=380000, weightedAvg=380000/150=2533.3333
-        String csv = singleSectionHeader() +
+        InputStream csv = csvStream(singleSectionHeader() +
                      "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
-                     "\"7203 トヨタ自動車\",2024-02-01,50,2600,2800,+50,+1.82,+10000,+7.69,140000\n";
-        Path file = writeCsv(csv);
+                     "\"7203 トヨタ自動車\",2024-02-01,50,2600,2800,+50,+1.82,+10000,+7.69,140000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(1);
         HoldingRecord r = records.get(0);
@@ -82,13 +74,12 @@ class CsvParserServiceTest {
     // ── Multiple distinct tickers ──────────────────────────────────────────
 
     @Test
-    void parse_multipleDistinctTickers_returnsAllAggregated() throws IOException {
-        String csv = singleSectionHeader() +
+    void parse_multipleDistinctTickers_returnsAllAggregated() {
+        InputStream csv = csvStream(singleSectionHeader() +
                      "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
-                     "\"6758 ソニーグループ\",2024-01-20,200,12000,13500,+100,+0.75,+300000,+12.50,2700000\n";
-        Path file = writeCsv(csv);
+                     "\"6758 ソニーグループ\",2024-01-20,200,12000,13500,+100,+0.75,+300000,+12.50,2700000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(2);
         assertThat(records).extracting(HoldingRecord::tickerCode)
@@ -98,8 +89,8 @@ class CsvParserServiceTest {
     // ── Multi-section: 特定口座 + NISA (同一フォーマット) ──────────────────
 
     @Test
-    void parse_multipleStockSections_parsesAll() throws IOException {
-        String csv =
+    void parse_multipleStockSections_parsesAll() {
+        InputStream csv = csvStream(
             // 特定口座 section
             "保有銘柄/特定口座\n" +
             singleSectionHeader() +
@@ -109,10 +100,9 @@ class CsvParserServiceTest {
             "保有銘柄/NISA口座\n" +
             singleSectionHeader() +
             "\"6758 ソニーグループ\",2024-01-20,200,12000,13500,+100,+0.75,+300000,+12.50,2700000\n" +
-            "合計,,,,,,,,,,\n";
-        Path file = writeCsv(csv);
+            "合計,,,,,,,,,,\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(2);
         assertThat(records).extracting(HoldingRecord::tickerCode)
@@ -122,18 +112,17 @@ class CsvParserServiceTest {
     // ── Multi-section: 信用建玉 (builds単価) ──────────────────────────────
 
     @Test
-    void parse_creditSection_usesKenTanka() throws IOException {
-        String csv =
+    void parse_creditSection_usesKenTanka() {
+        InputStream csv = csvStream(
             // 特定口座 section
             singleSectionHeader() +
             "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
             // 信用建玉 section (建単価 instead of 取得単価)
             "保有銘柄/信用建玉\n" +
             creditSectionHeader() +
-            "\"4689 ヤフー\",2024-02-01,500,437,398,-1,-0.25,-19500,-8.94,199000\n";
-        Path file = writeCsv(csv);
+            "\"4689 ヤフー\",2024-02-01,500,437,398,-1,-0.25,-19500,-8.94,199000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(2);
         HoldingRecord yahoo = records.stream()
@@ -146,15 +135,14 @@ class CsvParserServiceTest {
     // ── Cross-section aggregation: same ticker in 特定 and 信用 ────────────
 
     @Test
-    void parse_sameTickerAcrossSections_aggregated() throws IOException {
-        String csv =
+    void parse_sameTickerAcrossSections_aggregated() {
+        InputStream csv = csvStream(
             singleSectionHeader() +
             "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
             creditSectionHeader() +
-            "\"7203 トヨタ自動車\",2024-02-01,50,2600,2800,+50,+1.82,+10000,+7.69,140000\n";
-        Path file = writeCsv(csv);
+            "\"7203 トヨタ自動車\",2024-02-01,50,2600,2800,+50,+1.82,+10000,+7.69,140000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         // Should be aggregated into one record
         assertThat(records).hasSize(1);
@@ -164,15 +152,14 @@ class CsvParserServiceTest {
     // ── Mutual fund section is included as "投資信託" ─────────────────────
 
     @Test
-    void parse_fundSection_includedWithFundNameAsTicker() throws IOException {
-        String csv =
+    void parse_fundSection_includedWithFundNameAsTicker() {
+        InputStream csv = csvStream(
             singleSectionHeader() +
             "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
             "ファンド名,買付日,数量,取得単価,現在値,前日比,前日比（％）,損益,損益（％）,評価額\n" +
-            "日本成長株ファンド,----/--/--,293475,17402,22558,-273,-1.20,+151315,+29.63,662020\n";
-        Path file = writeCsv(csv);
+            "日本成長株ファンド,----/--/--,293475,17402,22558,-273,-1.20,+151315,+29.63,662020\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         // Stock + fund should both be present
         assertThat(records).hasSize(2);
@@ -181,17 +168,16 @@ class CsvParserServiceTest {
     }
 
     @Test
-    void parse_fundSection_totalRowSkipped() throws IOException {
-        String csv =
+    void parse_fundSection_totalRowSkipped() {
+        InputStream csv = csvStream(
             "ファンド名,買付日,数量,取得単価,現在値,前日比,前日比（％）,損益,損益（％）,評価額\n" +
             "日本成長株ファンド,----/--/--,293475,17402,22558,-273,-1.20,+151315,+29.63,662020\n" +
             // Total row: starts with a number
             "2656544.33,+445814.87,+20.17,-38969.78,-1.45\n" +
             singleSectionHeader() +
-            "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n";
-        Path file = writeCsv(csv);
+            "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(2);
         assertThat(records).extracting(HoldingRecord::tickerCode)
@@ -201,16 +187,15 @@ class CsvParserServiceTest {
     // ── Section title and total rows are skipped ──────────────────────────
 
     @Test
-    void parse_totalAndTitleRows_skipped() throws IOException {
-        String csv =
+    void parse_totalAndTitleRows_skipped() {
+        InputStream csv = csvStream(
             "保有銘柄/特定口座\n" +                              // section title
             singleSectionHeader() +
             "\"7203 トヨタ自動車\",2024-01-15,100,2500,2800,+50,+1.82,+30000,+12.00,280000\n" +
             "23284000,+2355800,+11.26,-17350,-0.14\n" +          // total row
-            "合計(保有銘柄/特定口座)\n";                          // section total header
-        Path file = writeCsv(csv);
+            "合計(保有銘柄/特定口座)\n");                         // section total header
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(1);
     }
@@ -218,12 +203,11 @@ class CsvParserServiceTest {
     // ── Comma-separated numbers and decimal prices ─────────────────────────
 
     @Test
-    void parse_commaSeparatedNumbers_parsedCorrectly() throws IOException {
-        String csv = singleSectionHeader() +
-                     "\"7203 トヨタ自動車\",2024-01-15,100,\"2,500\",\"2,800\",+50,+1.82,\"+30,000\",+12.00,\"280,000\"\n";
-        Path file = writeCsv(csv);
+    void parse_commaSeparatedNumbers_parsedCorrectly() {
+        InputStream csv = csvStream(singleSectionHeader() +
+                     "\"7203 トヨタ自動車\",2024-01-15,100,\"2,500\",\"2,800\",+50,+1.82,\"+30,000\",+12.00,\"280,000\"\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(1);
         assertThat(records.get(0).currentPrice()).isEqualByComparingTo(new BigDecimal("2800"));
@@ -231,13 +215,12 @@ class CsvParserServiceTest {
     }
 
     @Test
-    void parse_decimalPrice_parsedCorrectly() throws IOException {
+    void parse_decimalPrice_parsedCorrectly() {
         // e.g. 5844 with price 4456.7
-        String csv = singleSectionHeader() +
-                     "\"5844 さくらフィナンシャル\",----/--/--,200,3631,4456.7,-11.3,-0.25,+165140,+22.74,891340\n";
-        Path file = writeCsv(csv);
+        InputStream csv = csvStream(singleSectionHeader() +
+                     "\"5844 さくらフィナンシャル\",----/--/--,200,3631,4456.7,-11.3,-0.25,+165140,+22.74,891340\n");
 
-        List<HoldingRecord> records = parser.parse(file);
+        List<HoldingRecord> records = parser.parse(csv);
 
         assertThat(records).hasSize(1);
         assertThat(records.get(0).currentPrice()).isEqualByComparingTo(new BigDecimal("4456.7"));
@@ -246,41 +229,29 @@ class CsvParserServiceTest {
     // ── Error cases ────────────────────────────────────────────────────────
 
     @Test
-    void parse_fileNotFound_throwsCsvNotFoundException() {
-        assertThatThrownBy(() -> parser.parse(tempDir.resolve("missing.csv")))
-            .isInstanceOf(CsvNotFoundException.class);
-    }
+    void parse_noValidStockData_throwsCsvParseException() {
+        InputStream csv = csvStream("保有銘柄一覧\n合計,0,0\n");
 
-    @Test
-    void parse_noValidStockData_throwsCsvParseException() throws IOException {
-        // Only section titles and totals, no actual data
-        String csv = "保有銘柄一覧\n合計,0,0\n";
-        Path file = writeCsv(csv);
-
-        assertThatThrownBy(() -> parser.parse(file))
+        assertThatThrownBy(() -> parser.parse(csv))
             .isInstanceOf(CsvParseException.class)
             .hasMessageContaining("No valid stock holding data");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    /**
-     * CSV header row for 特定口座 / NISA sections (uses 取得単価).
-     */
     private String singleSectionHeader() {
         return "銘柄（コード）,買付日,数量,取得単価,現在値,前日比,前日比（％）,損益,損益（％）,評価額\n";
     }
 
-    /**
-     * CSV header row for 信用建玉 section (uses 建単価 instead of 取得単価).
-     */
     private String creditSectionHeader() {
         return "銘柄（コード）,建付日,数量,建単価,現在値,前日比,前日比（％）,損益,損益（％）,評価額\n";
     }
 
-    private Path writeCsv(String content) throws IOException {
-        Path file = tempDir.resolve("test.csv");
-        Files.writeString(file, content, MS932);
-        return file;
+    private InputStream csvStream(String content) {
+        try {
+            return new ByteArrayInputStream(content.getBytes(MS932));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

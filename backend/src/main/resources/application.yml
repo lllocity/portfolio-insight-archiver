@@ -38,8 +38,6 @@ logging:
     com.portfolio: ${LOG_LEVEL:INFO}
 
 app:
-  csv:
-    allowed-dir: ${CSV_ALLOWED_DIR:/data}
   jquants:
     base-url: https://api.jquants.com
     timeout-seconds: 5

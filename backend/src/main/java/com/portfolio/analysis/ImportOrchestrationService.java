@@ -1,7 +1,6 @@
 package com.portfolio.analysis;
 
 import com.portfolio.csv.CsvParserService;
-import com.portfolio.csv.CsvPathValidator;
 import com.portfolio.csv.dto.HoldingRecord;
 import com.portfolio.csv.dto.ImportResultDto;
 import com.portfolio.jquants.JQuantsApiClient;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,18 +26,15 @@ public class ImportOrchestrationService {
     private static final Logger log = LoggerFactory.getLogger(ImportOrchestrationService.class);
     private static final ZoneId JST = ZoneId.of("Asia/Tokyo");
 
-    private final CsvPathValidator csvPathValidator;
     private final CsvParserService csvParserService;
     private final SnapshotService snapshotService;
     private final JQuantsApiClient jQuantsApiClient;
 
     public ImportOrchestrationService(
-        CsvPathValidator csvPathValidator,
         CsvParserService csvParserService,
         SnapshotService snapshotService,
         JQuantsApiClient jQuantsApiClient
     ) {
-        this.csvPathValidator = csvPathValidator;
         this.csvParserService = csvParserService;
         this.snapshotService = snapshotService;
         this.jQuantsApiClient = jQuantsApiClient;
@@ -47,12 +42,6 @@ public class ImportOrchestrationService {
 
     public ImportResultDto executeFromUpload(InputStream csvStream) {
         return executeWithRecords(csvParserService.parse(csvStream));
-    }
-
-    /** Kept for potential CLI/test use. */
-    public ImportResultDto execute(String filePath) {
-        Path validatedPath = csvPathValidator.validate(filePath);
-        return executeWithRecords(csvParserService.parse(validatedPath));
     }
 
     private ImportResultDto executeWithRecords(List<HoldingRecord> records) {

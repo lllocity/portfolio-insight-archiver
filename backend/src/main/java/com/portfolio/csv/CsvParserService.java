@@ -1,6 +1,5 @@
 package com.portfolio.csv;
 
-import com.portfolio.common.exception.CsvNotFoundException;
 import com.portfolio.common.exception.CsvParseException;
 import com.portfolio.csv.dto.HoldingRecord;
 import org.apache.commons.csv.CSVFormat;
@@ -17,8 +16,6 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -55,17 +52,6 @@ public class CsvParserService {
 
     /** Minimum number of CSV fields required for a valid data row. */
     private static final int MIN_DATA_FIELDS = 10;
-
-    public List<HoldingRecord> parse(Path filePath) {
-        if (!Files.exists(filePath)) {
-            throw new CsvNotFoundException(filePath.toString());
-        }
-        try (BufferedReader reader = Files.newBufferedReader(filePath, SHIFT_JIS)) {
-            return parseMultiSection(reader);
-        } catch (IOException e) {
-            throw new CsvParseException("Failed to read CSV file: " + e.getMessage(), e);
-        }
-    }
 
     public List<HoldingRecord> parse(InputStream inputStream) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, SHIFT_JIS))) {
