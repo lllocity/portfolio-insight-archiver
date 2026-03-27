@@ -36,25 +36,18 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import AppError from '@/components/AppError.vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
-import { useSettingsStore } from '@/stores/settingsStore'
 
 const portfolioStore = usePortfolioStore()
-const settingsStore = useSettingsStore()
 const globalError = ref<string | null>(null)
 
 const tabs = [
   { key: 'portfolio', path: '/portfolio', label: 'ポートフォリオ' },
   { key: 'history', path: '/history', label: '履歴' },
-  { key: 'prompt', path: '/prompt', label: 'AIプロンプト' },
-  { key: 'settings', path: '/settings', label: '設定' }
+  { key: 'prompt', path: '/prompt', label: 'AIプロンプト' }
 ]
 
 onMounted(async () => {
-  await Promise.allSettled([
-    settingsStore.load(),
-    portfolioStore.load()
-  ])
+  await portfolioStore.load()
   if (portfolioStore.error) globalError.value = portfolioStore.error
-  if (settingsStore.error) globalError.value = settingsStore.error
 })
 </script>
