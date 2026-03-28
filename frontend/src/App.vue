@@ -7,7 +7,10 @@
     <nav class="border-b border-gray-200 bg-white shadow-sm">
       <div class="mx-auto max-w-7xl px-4">
         <div class="flex h-12 items-center gap-1">
-          <span class="mr-4 text-sm font-bold text-gray-800">📊 Portfolio Insight</span>
+          <div class="mr-4 flex items-center gap-2">
+            <img src="/logo.png" alt="マイポートフォリオ帳" class="h-7 w-7 rounded" />
+            <span class="text-sm font-bold text-gray-800">マイポートフォリオ帳</span>
+          </div>
           <RouterLink
             v-for="tab in tabs"
             :key="tab.path"
