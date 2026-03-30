@@ -60,10 +60,10 @@
           </td>
           <td class="px-3 py-2 text-right">{{ h.totalQuantity }}</td>
           <td class="px-3 py-2 text-right font-medium">{{ f.formatCurrency(h.totalValuation) }}</td>
-          <td class="px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLoss)">
+          <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLoss)">
             {{ f.formatCurrency(h.totalProfitLoss) }}
           </td>
-          <td class="px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
+          <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
           </td>
         </tr>
