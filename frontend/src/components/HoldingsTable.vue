@@ -3,9 +3,16 @@
     <table class="w-full text-sm" data-testid="holdings-table">
       <thead class="bg-gray-50 text-xs text-gray-500">
         <tr>
-          <th scope="col" class="px-3 py-2 text-left font-medium">銘柄コード</th>
+          <th scope="col" class="w-32 px-3 py-2 text-left font-medium">銘柄コード</th>
           <th scope="col" class="px-3 py-2 text-left font-medium">企業名</th>
-          <th scope="col" class="px-3 py-2 text-left font-medium">セクター</th>
+          <th
+            scope="col"
+            class="cursor-pointer px-3 py-2 text-left font-medium hover:text-gray-800"
+            :aria-sort="sortAriaLabel('sectorName')"
+            @click="toggleSort('sectorName')"
+          >
+            セクター {{ sortIcon('sectorName') }}
+          </th>
           <th scope="col" class="px-3 py-2 text-right font-medium">数量</th>
           <th
             scope="col"
@@ -31,7 +38,7 @@
           >
             損益率 {{ sortIcon('totalProfitLossPct') }}
           </th>
-          <th scope="col" class="px-3 py-2 text-left font-medium">メモ</th>
+          <th scope="col" class="w-48 px-3 py-2 text-left font-medium">メモ</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
@@ -41,7 +48,7 @@
           data-testid="holdings-row"
           class="hover:bg-gray-50"
         >
-          <td class="px-3 py-2 font-mono font-medium">{{ h.tickerCode }}</td>
+          <td class="w-32 break-all px-3 py-2 font-mono font-medium">{{ h.tickerCode }}</td>
           <td class="px-3 py-2 text-gray-700">
             <a
               v-if="h.companyName && /^\d{4}$/.test(h.tickerCode)"
@@ -54,10 +61,9 @@
           </td>
           <td class="px-3 py-2">
             <span
-              v-if="h.sectorName === '投資信託'"
-              class="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700"
-            >投資信託</span>
-            <span v-else class="text-gray-600">{{ h.sectorName }}</span>
+              class="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+              :style="{ backgroundColor: sectorColorMap[h.sectorName] ?? '#9ca3af' }"
+            >{{ h.sectorName }}</span>
           </td>
           <td class="px-3 py-2 text-right">{{ h.totalQuantity }}</td>
           <td class="px-3 py-2 text-right font-medium">{{ f.formatCurrency(h.totalValuation) }}</td>
@@ -67,7 +73,7 @@
           <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
           </td>
-          <td class="px-3 py-2 min-w-[120px] max-w-[200px]">
+          <td class="w-48 px-3 py-2">
             <template v-if="editingTicker === h.tickerCode">
               <div class="flex flex-col gap-1">
                 <input
@@ -105,10 +111,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useFormatters } from '@/composables/useFormatters'
+import { buildSectorColorMap } from '@/composables/useSectorColors'
 import { upsertMemo, deleteMemo } from '@/api/memoApi'
-import type { EnrichedHolding } from '@/types/portfolio'
+import type { EnrichedHolding, SectorAllocation } from '@/types/portfolio'
 
-const props = defineProps<{ holdings: EnrichedHolding[] }>()
+const props = defineProps<{ holdings: EnrichedHolding[]; sectors: SectorAllocation[] }>()
+
+const sectorColorMap = computed(() => buildSectorColorMap(props.sectors))
 const f = useFormatters()
 
 // メモのローカル状態（props から初期化）
@@ -147,7 +156,9 @@ async function saveMemo(tickerCode: string) {
   editingContent.value = ''
 }
 
-type SortKey = 'totalValuation' | 'totalProfitLoss' | 'totalProfitLossPct'
+type NumericSortKey = 'totalValuation' | 'totalProfitLoss' | 'totalProfitLossPct'
+type StringSortKey = 'sectorName'
+type SortKey = NumericSortKey | StringSortKey
 const sortKey = ref<SortKey>('totalValuation')
 const sortDir = ref<'asc' | 'desc'>('desc')
 
@@ -156,7 +167,7 @@ function toggleSort(key: SortKey) {
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortKey.value = key
-    sortDir.value = 'desc'
+    sortDir.value = key === 'sectorName' ? 'asc' : 'desc'
   }
 }
 
@@ -172,6 +183,10 @@ function sortAriaLabel(key: SortKey): 'ascending' | 'descending' | 'none' {
 
 const sortedHoldings = computed(() => {
   return [...props.holdings].sort((a, b) => {
+    if (sortKey.value === 'sectorName') {
+      const cmp = a.sectorName.localeCompare(b.sectorName, 'ja')
+      return sortDir.value === 'asc' ? cmp : -cmp
+    }
     const av = parseFloat(a[sortKey.value])
     const bv = parseFloat(b[sortKey.value])
     return sortDir.value === 'asc' ? av - bv : bv - av

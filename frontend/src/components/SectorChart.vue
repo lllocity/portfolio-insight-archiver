@@ -41,6 +41,7 @@ import {
   Legend
 } from 'chart.js'
 import { useFormatters } from '@/composables/useFormatters'
+import { buildSectorColorMap } from '@/composables/useSectorColors'
 import type { SectorAllocation } from '@/types/portfolio'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -48,28 +49,13 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const props = defineProps<{ sectors: SectorAllocation[] }>()
 const f = useFormatters()
 
-// 特定セクターに固定色を割り当て
-const FIXED_COLORS: Record<string, string> = {
-  '投資信託': '#94a3b8',
-  '不明': '#cbd5e1'
-}
-
-const PALETTE = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-  '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#14b8a6',
-  '#6366f1', '#a3e635', '#fb923c', '#f43f5e', '#0ea5e9',
-  '#22c55e', '#eab308', '#d946ef', '#64748b', '#78716c'
-]
-
 const sortedSectors = computed(() =>
   [...props.sectors].sort((a, b) => parseFloat(b.allocationPct) - parseFloat(a.allocationPct))
 )
 
 const chartData = computed(() => {
-  let paletteIdx = 0
-  const colors = sortedSectors.value.map(s =>
-    FIXED_COLORS[s.sector33Name] ?? PALETTE[paletteIdx++ % PALETTE.length]
-  )
+  const colorMap = buildSectorColorMap(props.sectors)
+  const colors = sortedSectors.value.map(s => colorMap[s.sector33Name])
   return {
     labels: sortedSectors.value.map(s => s.sector33Name),
     datasets: [{

@@ -54,7 +54,7 @@
       <!-- 保有銘柄テーブル -->
       <div class="mb-6">
         <h2 class="mb-2 text-sm font-semibold text-gray-700">保有銘柄一覧</h2>
-        <HoldingsTable :holdings="store.data.holdings" />
+        <HoldingsTable :holdings="store.data.holdings" :sectors="store.data.sectors" />
       </div>
 
       <!-- 差分ビュー -->
