@@ -4,6 +4,7 @@ import com.portfolio.csv.CsvParserService;
 import com.portfolio.csv.dto.HoldingRecord;
 import com.portfolio.csv.dto.ImportResultDto;
 import com.portfolio.jquants.JQuantsApiClient;
+import com.portfolio.memo.StockMemoRepository;
 import com.portfolio.snapshot.SnapshotService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,15 +30,18 @@ public class ImportOrchestrationService {
     private final CsvParserService csvParserService;
     private final SnapshotService snapshotService;
     private final JQuantsApiClient jQuantsApiClient;
+    private final StockMemoRepository stockMemoRepository;
 
     public ImportOrchestrationService(
         CsvParserService csvParserService,
         SnapshotService snapshotService,
-        JQuantsApiClient jQuantsApiClient
+        JQuantsApiClient jQuantsApiClient,
+        StockMemoRepository stockMemoRepository
     ) {
         this.csvParserService = csvParserService;
         this.snapshotService = snapshotService;
         this.jQuantsApiClient = jQuantsApiClient;
+        this.stockMemoRepository = stockMemoRepository;
     }
 
     public ImportResultDto executeFromUpload(InputStream csvStream) {
@@ -58,6 +62,9 @@ public class ImportOrchestrationService {
         }
 
         snapshotService.save(today, records);
+
+        // 保有外銘柄のメモを削除
+        stockMemoRepository.deleteAllByTickerCodeNotIn(tickerCodes);
 
         return new ImportResultDto(true, today, records.size(), warnings.isEmpty() ? null : warnings);
     }

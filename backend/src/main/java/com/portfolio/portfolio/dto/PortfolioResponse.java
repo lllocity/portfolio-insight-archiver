@@ -28,7 +28,8 @@ public record PortfolioResponse(
         String dailyChangePct,
         String totalProfitLoss,
         String totalProfitLossPct,
-        String totalValuation
+        String totalValuation,
+        String memo
     ) {}
 
     public record SectorAllocationDto(

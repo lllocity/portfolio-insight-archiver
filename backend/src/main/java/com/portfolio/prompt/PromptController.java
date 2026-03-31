@@ -4,6 +4,7 @@ import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.*;
 import com.portfolio.jquants.JQuantsApiClient;
 import com.portfolio.jquants.model.StockMeta;
+import com.portfolio.memo.StockMemoRepository;
 import com.portfolio.prompt.dto.PromptResponse;
 import com.portfolio.snapshot.SnapshotService;
 import com.portfolio.snapshot.model.Holding;
@@ -14,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/prompt")
@@ -26,15 +29,18 @@ public class PromptController {
     private final JQuantsApiClient jQuantsApiClient;
     private final PortfolioAnalysisService analysisService;
     private final AiPromptGeneratorService promptGeneratorService;
+    private final StockMemoRepository stockMemoRepository;
 
     public PromptController(SnapshotService snapshotService,
                             JQuantsApiClient jQuantsApiClient,
                             PortfolioAnalysisService analysisService,
-                            AiPromptGeneratorService promptGeneratorService) {
+                            AiPromptGeneratorService promptGeneratorService,
+                            StockMemoRepository stockMemoRepository) {
         this.snapshotService = snapshotService;
         this.jQuantsApiClient = jQuantsApiClient;
         this.analysisService = analysisService;
         this.promptGeneratorService = promptGeneratorService;
+        this.stockMemoRepository = stockMemoRepository;
     }
 
     /** GET /api/prompt/latest — 最新スナップショットからAIプロンプトを生成して返却 */
@@ -63,8 +69,11 @@ public class PromptController {
         Optional<Snapshot> previous = snapshotService.findLatestBefore(snapshot.getSnapshotDate());
         SnapshotDiff diff = analysisService.calculateDiff(snapshot, previous);
 
+        Map<String, String> memoMap = stockMemoRepository.findAllByTickerCodeIn(tickerCodes)
+            .stream().collect(Collectors.toMap(m -> m.getTickerCode(), m -> m.getContent()));
+
         PortfolioAnalysisResult result = new PortfolioAnalysisResult(summary, enriched, sectors, diff);
-        String prompt = promptGeneratorService.generate(result);
+        String prompt = promptGeneratorService.generate(result, memoMap);
 
         return ResponseEntity.ok(new PromptResponse(prompt));
     }

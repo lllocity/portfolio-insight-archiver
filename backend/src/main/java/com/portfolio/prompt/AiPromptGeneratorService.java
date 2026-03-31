@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Generates structured AI analysis prompt (BR-PROMPT-01/02).
@@ -19,7 +20,7 @@ public class AiPromptGeneratorService {
 
     private static final NumberFormat JPY_FORMAT = NumberFormat.getNumberInstance(Locale.JAPAN);
 
-    public String generate(PortfolioAnalysisResult analysis) {
+    public String generate(PortfolioAnalysisResult analysis, Map<String, String> memos) {
         PortfolioSummary summary = analysis.summary();
         StringBuilder sb = new StringBuilder();
 
@@ -83,12 +84,34 @@ public class AiPromptGeneratorService {
             sb.append("\n");
         }
 
-        // Section 5: Investment policy (fixed text — BR-PROMPT-01)
-        sb.append("## 5. 投資方針\n");
+        // Section 5: Per-stock memos (only if any exist)
+        Map<String, String> memosToPrint = new java.util.LinkedHashMap<>();
+        for (EnrichedHolding eh : analysis.enrichedHoldings()) {
+            String memo = memos.get(eh.holding().getTickerCode());
+            if (memo != null && !memo.isBlank()) {
+                memosToPrint.put(eh.holding().getTickerCode(),
+                    memo + "|" + (eh.stockMeta() != null ? nvl(eh.stockMeta().getCompanyName()) : "-"));
+            }
+        }
+        if (!memosToPrint.isEmpty()) {
+            sb.append("## 5. 銘柄別メモ（過去のアドバイス等）\n");
+            sb.append("| 銘柄コード | 企業名 | メモ |\n");
+            sb.append("|---|---|---|\n");
+            memosToPrint.forEach((ticker, val) -> {
+                String[] parts = val.split("\\|", 2);
+                sb.append("| ").append(ticker).append(" | ")
+                  .append(parts[1]).append(" | ")
+                  .append(parts[0]).append(" |\n");
+            });
+            sb.append("\n");
+        }
+
+        // Section 6: Investment policy (fixed text — BR-PROMPT-01)
+        sb.append("## 6. 投資方針\n");
         sb.append("バリュー株（低PBR・低PER）、高配当銘柄、国策テーマ銘柄（造船・銀行・保険・防衛等）を重視したポートフォリオを構築しています。\n\n");
 
-        // Section 6: Analysis request
-        sb.append("## 6. 分析依頼\n");
+        // Section 7: Analysis request
+        sb.append("## 7. 分析依頼\n");
         sb.append("以下の観点から分析・アドバイスをお願いします:\n");
         sb.append("1. 現在のポートフォリオの総合評価\n");
         sb.append("2. 買い増しを検討すべき銘柄とその理由\n");

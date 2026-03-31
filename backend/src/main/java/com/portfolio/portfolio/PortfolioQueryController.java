@@ -4,6 +4,7 @@ import com.portfolio.analysis.PortfolioAnalysisService;
 import com.portfolio.analysis.dto.*;
 import com.portfolio.jquants.StockMetaCacheRepository;
 import com.portfolio.jquants.model.StockMeta;
+import com.portfolio.memo.StockMemoRepository;
 import com.portfolio.portfolio.dto.PortfolioResponse;
 import com.portfolio.portfolio.dto.PortfolioResponse.*;
 import com.portfolio.snapshot.SnapshotService;
@@ -22,15 +23,18 @@ public class PortfolioQueryController {
     private final SnapshotService snapshotService;
     private final StockMetaCacheRepository stockMetaCacheRepository;
     private final PortfolioAnalysisService analysisService;
+    private final StockMemoRepository stockMemoRepository;
 
     public PortfolioQueryController(
         SnapshotService snapshotService,
         StockMetaCacheRepository stockMetaCacheRepository,
-        PortfolioAnalysisService analysisService
+        PortfolioAnalysisService analysisService,
+        StockMemoRepository stockMemoRepository
     ) {
         this.snapshotService = snapshotService;
         this.stockMetaCacheRepository = stockMetaCacheRepository;
         this.analysisService = analysisService;
+        this.stockMemoRepository = stockMemoRepository;
     }
 
     /** GET /api/portfolio/latest — BL-07 */
@@ -54,16 +58,19 @@ public class PortfolioQueryController {
         Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(List.copyOf(allTickers))
             .stream().collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
 
+        Map<String, String> memoMap = stockMemoRepository.findAllByTickerCodeIn(tickerCodes)
+            .stream().collect(Collectors.toMap(m -> m.getTickerCode(), m -> m.getContent()));
+
         List<EnrichedHolding> enriched = analysisService.mergeWithMeta(snapshot.getHoldings(),
             List.copyOf(metaMap.values()));
         List<SectorAllocation> sectors = analysisService.analyzeSectorAllocation(enriched);
 
-        return ResponseEntity.ok(toResponse(snapshot, enriched, sectors, diff, metaMap));
+        return ResponseEntity.ok(toResponse(snapshot, enriched, sectors, diff, metaMap, memoMap));
     }
 
     private PortfolioResponse toResponse(Snapshot snapshot, List<EnrichedHolding> enriched,
                                           List<SectorAllocation> sectors, SnapshotDiff diff,
-                                          Map<String, StockMeta> metaMap) {
+                                          Map<String, StockMeta> metaMap, Map<String, String> memoMap) {
         SnapshotSummaryDto summaryDto = new SnapshotSummaryDto(
             snapshot.getSnapshotDate().toString(),
             snapshot.getTotalValuation().toPlainString(),
@@ -86,7 +93,8 @@ public class PortfolioQueryController {
                 h.getDailyChangePct().toPlainString(),
                 h.getTotalProfitLoss().toPlainString(),
                 h.getTotalProfitLossPct().toPlainString(),
-                h.getTotalValuation().toPlainString()
+                h.getTotalValuation().toPlainString(),
+                memoMap.get(h.getTickerCode())
             );
         }).toList();
 
