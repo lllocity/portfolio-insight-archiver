@@ -243,9 +243,12 @@ public class CsvParserService {
             ? BigDecimal.ZERO
             : totalCost.divide(totalQuantity, 4, RoundingMode.HALF_UP);
 
-        BigDecimal totalProfitLossPct = totalCost.compareTo(BigDecimal.ZERO) == 0
+        // Derive cost basis from valuation to avoid mutual-fund unit mismatch
+        // (fund quantities are in 口 but prices are per 万口, so quantity×price overflows)
+        BigDecimal costBasis = totalValuation.subtract(totalProfitLoss);
+        BigDecimal totalProfitLossPct = costBasis.compareTo(BigDecimal.ZERO) == 0
             ? BigDecimal.ZERO
-            : totalProfitLoss.divide(totalCost, 6, RoundingMode.HALF_UP)
+            : totalProfitLoss.divide(costBasis, 6, RoundingMode.HALF_UP)
                              .multiply(BigDecimal.valueOf(100))
                              .setScale(2, RoundingMode.HALF_UP);
 

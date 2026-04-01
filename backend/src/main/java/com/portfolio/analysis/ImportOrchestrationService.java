@@ -73,13 +73,17 @@ public class ImportOrchestrationService {
      * Computes totalProfitLossPct from aggregated holdings (BR-SNAP-02).
      */
     public static BigDecimal computeProfitLossPct(List<HoldingRecord> records) {
-        BigDecimal totalCost = records.stream()
-            .map(r -> r.totalQuantity().multiply(r.weightedAvgPurchasePrice()))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         BigDecimal totalProfitLoss = records.stream()
             .map(HoldingRecord::totalProfitLoss)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalValuation = records.stream()
+            .map(HoldingRecord::totalValuation)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Derive cost basis from valuation to avoid mutual-fund unit mismatch
+        // (fund quantities are in 口 but prices are per 万口, so quantity×price overflows)
+        BigDecimal totalCost = totalValuation.subtract(totalProfitLoss);
 
         if (totalCost.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
         return totalProfitLoss.divide(totalCost, 6, RoundingMode.HALF_UP)
