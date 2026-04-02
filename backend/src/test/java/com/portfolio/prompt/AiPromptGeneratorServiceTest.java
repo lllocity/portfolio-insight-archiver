@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -22,17 +23,17 @@ class AiPromptGeneratorServiceTest {
     }
 
     @Test
-    void generate_containsAllSixSections() {
+    void generate_containsAllMandatorySections() {
         PortfolioAnalysisResult analysis = buildAnalysis();
 
-        String prompt = service.generate(analysis);
+        String prompt = service.generate(analysis, Map.of());
 
         assertThat(prompt).contains("## 1. ポートフォリオ概要");
         assertThat(prompt).contains("## 2. 保有銘柄・指標データ");
         assertThat(prompt).contains("## 3. セクター別構成比");
         assertThat(prompt).contains("## 4. 前回からの変化");
-        assertThat(prompt).contains("## 5. 投資方針");
-        assertThat(prompt).contains("## 6. 分析依頼");
+        assertThat(prompt).contains("## 6. 投資方針");
+        assertThat(prompt).contains("## 7. 分析依頼");
     }
 
     @Test
@@ -47,7 +48,7 @@ class AiPromptGeneratorServiceTest {
             SnapshotDiff.empty()
         );
 
-        String prompt = service.generate(analysis);
+        String prompt = service.generate(analysis, Map.of());
 
         // Company name "-" in holdings table
         assertThat(prompt).contains("| 7203 | - |");
@@ -57,7 +58,7 @@ class AiPromptGeneratorServiceTest {
     void generate_noPreviousSnapshot_showsNoDiffMessage() {
         PortfolioAnalysisResult analysis = buildAnalysis();  // uses SnapshotDiff.empty()
 
-        String prompt = service.generate(analysis);
+        String prompt = service.generate(analysis, Map.of());
 
         assertThat(prompt).contains("初回スナップショットのため差分なし");
     }
@@ -66,7 +67,7 @@ class AiPromptGeneratorServiceTest {
     void generate_investmentPolicyIsFixed() {
         PortfolioAnalysisResult analysis = buildAnalysis();
 
-        String prompt = service.generate(analysis);
+        String prompt = service.generate(analysis, Map.of());
 
         assertThat(prompt).contains("バリュー株（低PBR・低PER）、高配当銘柄、国策テーマ銘柄");
     }
