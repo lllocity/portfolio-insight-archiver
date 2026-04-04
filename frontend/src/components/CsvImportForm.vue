@@ -28,6 +28,16 @@
         {{ loading ? '取り込み中...' : 'インポート' }}
       </button>
     </div>
+    <div class="mt-2 flex items-center gap-2">
+      <label class="text-sm text-gray-600 whitespace-nowrap">スナップショット日付:</label>
+      <input
+        type="date"
+        class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+        :max="today"
+        v-model="snapshotDate"
+        data-testid="csv-import-date-input"
+      />
+    </div>
 
     <!-- バリデーションエラー -->
     <p v-if="validationError" class="mt-1 text-xs text-red-600" data-testid="csv-import-validation-error">
@@ -53,7 +63,10 @@ import type { ImportResult } from '@/types/import'
 
 const emit = defineEmits<{ imported: [] }>()
 
+const today = new Date().toISOString().slice(0, 10)
+
 const selectedFile = ref<File | null>(null)
+const snapshotDate = ref(today)
 const loading = ref(false)
 const result = ref<ImportResult | null>(null)
 const validationError = ref('')
@@ -74,7 +87,7 @@ async function handleImport() {
   loading.value = true
   result.value = null
   try {
-    result.value = await importCsv(selectedFile.value)
+    result.value = await importCsv(selectedFile.value, snapshotDate.value)
     emit('imported')
   } catch (e: unknown) {
     validationError.value = (e as { message?: string })?.message ?? 'インポートに失敗しました'

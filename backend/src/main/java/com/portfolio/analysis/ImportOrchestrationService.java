@@ -44,13 +44,15 @@ public class ImportOrchestrationService {
         this.stockMemoRepository = stockMemoRepository;
     }
 
-    public ImportResultDto executeFromUpload(InputStream csvStream) {
-        return executeWithRecords(csvParserService.parse(csvStream));
+    public ImportResultDto executeFromUpload(InputStream csvStream, LocalDate snapshotDate) {
+        return executeWithRecords(csvParserService.parse(csvStream), snapshotDate);
     }
 
-    private ImportResultDto executeWithRecords(List<HoldingRecord> records) {
+    private ImportResultDto executeWithRecords(List<HoldingRecord> records, LocalDate snapshotDate) {
         List<String> warnings = new ArrayList<>();
         LocalDate today = LocalDate.now(JST);
+        LocalDate targetDate = (snapshotDate != null) ? snapshotDate : today;
+        boolean isToday = targetDate.equals(today);
 
         // Populate stock_meta_cache; PortfolioQueryController reads from cache at display time
         List<String> tickerCodes = records.stream().map(HoldingRecord::tickerCode).toList();
@@ -61,12 +63,14 @@ public class ImportOrchestrationService {
             warnings.add("J-Quants API is unavailable. Stock metadata will not be included.");
         }
 
-        snapshotService.save(today, records);
+        snapshotService.save(targetDate, records);
 
-        // 保有外銘柄のメモを削除
-        stockMemoRepository.deleteAllByTickerCodeNotIn(tickerCodes);
+        // 保有外銘柄のメモを削除（今日のインポート時のみ）
+        if (isToday) {
+            stockMemoRepository.deleteAllByTickerCodeNotIn(tickerCodes);
+        }
 
-        return new ImportResultDto(true, today, records.size(), warnings.isEmpty() ? null : warnings);
+        return new ImportResultDto(true, targetDate, records.size(), warnings.isEmpty() ? null : warnings);
     }
 
     /**
