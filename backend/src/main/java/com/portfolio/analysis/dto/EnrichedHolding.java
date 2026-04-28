@@ -7,9 +7,9 @@ public record EnrichedHolding(
     Holding holding,
     StockMeta stockMeta  // nullable — null when J-Quants fetch failed or for mutual funds
 ) {
-    /** Mutual fund tickers are the full fund name (not a 4-digit code). */
+    /** Mutual fund tickers are the full fund name (not a 4-character stock code like 7203 or 186A). */
     public boolean isMutualFund() {
-        return !holding.getTickerCode().matches("\\d{4}");
+        return !holding.getTickerCode().matches("\\d{3}[0-9A-Z]");
     }
 
     public String getSectorName() {

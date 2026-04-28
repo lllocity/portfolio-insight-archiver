@@ -195,14 +195,15 @@ public class CsvParserService {
     }
 
     /**
-     * Extracts the 4-digit ticker code from a field like "7203 ソニーグループ".
-     * Returns null if the field does not start with a 4-digit stock code.
+     * Extracts the 4-character stock code from a field like "7203 ソニーグループ" or "186A アストロスケール".
+     * Accepts 3 digits followed by one digit or uppercase letter (e.g. 7203, 186A).
+     * Returns null if the field does not start with a valid stock code.
      */
     private String extractTickerCode(String rawField) {
         if (rawField == null || rawField.isBlank()) return null;
         int spaceIdx = rawField.indexOf(' ');
         String code = spaceIdx > 0 ? rawField.substring(0, spaceIdx) : rawField;
-        return code.matches("\\d{4}") ? code : null;
+        return code.matches("\\d{3}[0-9A-Z]") ? code : null;
     }
 
     private Map<String, String> mapRow(String[] headers, List<String> fields) {

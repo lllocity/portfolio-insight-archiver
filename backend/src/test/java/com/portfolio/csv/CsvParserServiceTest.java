@@ -226,6 +226,21 @@ class CsvParserServiceTest {
         assertThat(records.get(0).currentPrice()).isEqualByComparingTo(new BigDecimal("4456.7"));
     }
 
+    // ── Alphanumeric ticker codes (e.g. growth market 186A) ───────────────
+
+    @Test
+    void parse_alphanumericTickerCode_parsedCorrectly() {
+        InputStream csv = csvStream(singleSectionHeader() +
+                     "\"186A アストロスケールホールディングス\",2026/04/28,500,1272,1312,+72,+5.81,+20000,+3.14,656000\n");
+
+        List<HoldingRecord> records = parser.parse(csv);
+
+        assertThat(records).hasSize(1);
+        assertThat(records.get(0).tickerCode()).isEqualTo("186A");
+        assertThat(records.get(0).totalQuantity()).isEqualByComparingTo(new BigDecimal("500"));
+        assertThat(records.get(0).totalValuation()).isEqualByComparingTo(new BigDecimal("656000"));
+    }
+
     // ── Error cases ────────────────────────────────────────────────────────
 
     @Test
