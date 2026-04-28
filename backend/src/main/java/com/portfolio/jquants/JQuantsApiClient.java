@@ -53,9 +53,9 @@ public class JQuantsApiClient {
             return List.of();
         }
 
-        // Filter out mutual fund identifiers (non-4-digit codes)
+        // Filter out mutual fund identifiers (long fund names, not 4-character stock codes)
         List<String> stockCodes = tickerCodes.stream()
-            .filter(code -> code.matches("\\d{4}"))
+            .filter(code -> code.matches("\\d{3}[0-9A-Z]"))
             .toList();
         if (stockCodes.isEmpty()) return List.of();
 
@@ -105,7 +105,7 @@ public class JQuantsApiClient {
             for (Map<String, Object> item : data) {
                 String rawCode = getString(item, "Code");
                 if (rawCode == null) continue;
-                // API returns 5-digit codes (e.g. "72030"), normalize to 4-digit
+                // API returns 5-character codes (e.g. "72030", "186A0"), normalize to 4-character
                 String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
                 if (!targetCodes.contains(code)) continue;
 
