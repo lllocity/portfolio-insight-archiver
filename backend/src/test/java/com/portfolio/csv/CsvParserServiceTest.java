@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  * Tests for CsvParserService using the real SBI証券 CSV format:
- * - Ticker code field is "XXXX 会社名" (4-digit code + space + name)
+ * - Ticker code field is "XXXX 会社名" (4-character code + space + name, e.g. "7203", "186A")
  * - Multiple sections per file (特定口座, 信用建玉, NISA, 投資信託)
  * - Each section has its own header row
  * - 信用建玉 section uses "建単価" instead of "取得単価"

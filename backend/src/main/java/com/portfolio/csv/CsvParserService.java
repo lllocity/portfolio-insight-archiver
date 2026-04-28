@@ -30,7 +30,7 @@ import java.util.*;
  *   <li>投資信託 (mutual funds)               — column header "ファンド名" → skipped</li>
  * </ul>
  * Each section starts with its own header row containing "銘柄（コード）".
- * Ticker code fields look like "7203 ソニーグループ" — we extract only the 4-digit code.
+ * Ticker code fields look like "7203 ソニーグループ" or "186A アストロスケール" — we extract the 4-character stock code.
  * Multiple rows with the same ticker code are aggregated per BR-CSV-04.
  */
 @Service
@@ -108,7 +108,7 @@ public class CsvParserService {
 
             if (sectionType == SectionType.UNKNOWN || currentHeaders == null) continue;
 
-            // ── STOCK section: extract 4-digit ticker code ──
+            // ── STOCK section: extract 4-character ticker code ──
             if (sectionType == SectionType.STOCK) {
                 String tickerCode = extractTickerCode(firstField);
                 if (tickerCode == null) continue;
