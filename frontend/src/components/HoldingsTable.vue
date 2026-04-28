@@ -51,7 +51,7 @@
           <td class="w-32 break-all px-3 py-2 font-mono font-medium">{{ h.tickerCode }}</td>
           <td class="px-3 py-2 text-gray-700">
             <a
-              v-if="h.companyName && /^\d{4}$/.test(h.tickerCode)"
+              v-if="h.companyName && /^\d{3}[0-9A-Z]$/.test(h.tickerCode)"
               :href="`https://finance.yahoo.co.jp/quote/${h.tickerCode}.T`"
               target="_blank"
               rel="noopener noreferrer"
