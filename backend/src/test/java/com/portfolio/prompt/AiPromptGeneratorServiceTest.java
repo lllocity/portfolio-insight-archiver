@@ -34,6 +34,18 @@ class AiPromptGeneratorServiceTest {
         assertThat(prompt).contains("## 4. 前回からの変化");
         assertThat(prompt).contains("## 6. 投資方針");
         assertThat(prompt).contains("## 7. 分析依頼");
+        assertThat(prompt).contains("## 8. 今回の気になること・質問");
+    }
+
+    @Test
+    void generate_overviewIsTable() {
+        PortfolioAnalysisResult analysis = buildAnalysis();
+
+        String prompt = service.generate(analysis, Map.of());
+
+        assertThat(prompt).contains("| スナップショット日 | 2024-03-01 |");
+        assertThat(prompt).contains("| 総評価額 | ¥280,000 |");
+        assertThat(prompt).contains("| 保有銘柄数 | 1銘柄 |");
     }
 
     @Test
@@ -50,13 +62,12 @@ class AiPromptGeneratorServiceTest {
 
         String prompt = service.generate(analysis, Map.of());
 
-        // Company name "-" in holdings table
         assertThat(prompt).contains("| 7203 | - |");
     }
 
     @Test
     void generate_noPreviousSnapshot_showsNoDiffMessage() {
-        PortfolioAnalysisResult analysis = buildAnalysis();  // uses SnapshotDiff.empty()
+        PortfolioAnalysisResult analysis = buildAnalysis();
 
         String prompt = service.generate(analysis, Map.of());
 
@@ -64,12 +75,55 @@ class AiPromptGeneratorServiceTest {
     }
 
     @Test
-    void generate_investmentPolicyIsFixed() {
+    void generate_diffSection_showsTable() {
+        StockMeta meta = new StockMeta("7203", "トヨタ自動車", "0050", "輸送用機器",
+            null, null, null, null, null);
+        EnrichedHolding eh = new EnrichedHolding(holding("7203"), meta);
+        PortfolioSummary summary = new PortfolioSummary(
+            LocalDate.of(2024, 3, 1), new BigDecimal("280000"),
+            new BigDecimal("30000"), new BigDecimal("12.00"), 1, 1);
+
+        Holding added = holding("6758");
+        Holding removed = holding("9984");
+        HoldingChange increased = new HoldingChange("7203", new BigDecimal("50"),
+            new BigDecimal("10000"), holding("7203"), holding("7203"));
+        SnapshotDiff diff = new SnapshotDiff(
+            List.of(added), List.of(removed), List.of(increased),
+            BigDecimal.ZERO, BigDecimal.ZERO);
+
+        PortfolioAnalysisResult analysis = new PortfolioAnalysisResult(
+            summary, List.of(eh),
+            List.of(new SectorAllocation("輸送用機器", new BigDecimal("280000"), new BigDecimal("100.00"), 1)),
+            diff);
+
+        String prompt = service.generate(analysis, Map.of());
+
+        assertThat(prompt).contains("| 変化の種類 | 銘柄コード | 企業名 | 変化内容 |");
+        assertThat(prompt).contains("| 追加 | 6758 |");
+        assertThat(prompt).contains("| 除去 | 9984 |");
+        assertThat(prompt).contains("| 数量増加 | 7203 | トヨタ自動車 | +50株 |");
+    }
+
+    @Test
+    void generate_investmentPolicyShowsPlaceholder() {
         PortfolioAnalysisResult analysis = buildAnalysis();
 
         String prompt = service.generate(analysis, Map.of());
 
-        assertThat(prompt).contains("バリュー株（低PBR・低PER）、高配当銘柄、国策テーマ銘柄");
+        assertThat(prompt).contains("（変更なし）");
+        assertThat(prompt).doesNotContain("バリュー株（低PBR・低PER）");
+    }
+
+    @Test
+    void generate_analysisRequestUsesCheckboxes() {
+        PortfolioAnalysisResult analysis = buildAnalysis();
+
+        String prompt = service.generate(analysis, Map.of());
+
+        assertThat(prompt).contains("- [ ] 現在のポートフォリオの総合評価");
+        assertThat(prompt).contains("- [ ] 整理・売却を検討すべき銘柄とその理由（機会コスト比較含む）");
+        assertThat(prompt).contains("- [ ] LINEヤフー削減タイミングの評価");
+        assertThat(prompt).contains("- [ ] その他：（自由記入）");
     }
 
     private PortfolioAnalysisResult buildAnalysis() {
