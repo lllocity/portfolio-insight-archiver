@@ -9,7 +9,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -154,14 +153,7 @@ public class JQuantsApiClient {
     private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
                                             Map<String, StockMeta> validCache) {
         Set<String> targetSet = new HashSet<>(codes);
-        // Free plan covers data from 12 weeks ago; use 13 weeks to stay within range
-        // Adjust to nearest preceding weekday (fins/summary has no data on weekends)
-        LocalDate baseDate = LocalDate.now(JST).minusWeeks(13);
-        while (baseDate.getDayOfWeek() == DayOfWeek.SATURDAY
-            || baseDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            baseDate = baseDate.minusDays(1);
-        }
-        String date = baseDate.toString();
+        String date = LocalDate.now(JST).toString();
         log.info("Fetching fins/summary (date={}) for {} target stock(s)...", date, codes.size());
 
         int saved = 0;
@@ -185,12 +177,6 @@ public class JQuantsApiClient {
                 if (response == null) break;
                 List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
                 if (data == null) break;
-
-                log.info("fins/summary: received {} records (page paginationKey={})", data.size(), pk);
-                if (!data.isEmpty()) {
-                    log.info("fins/summary: first record keys = {}", data.get(0).keySet());
-                    log.info("fins/summary: first record sample = {}", data.get(0));
-                }
 
                 for (Map<String, Object> item : data) {
                     String rawCode = getString(item, "Code");
