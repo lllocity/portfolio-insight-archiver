@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -154,7 +155,13 @@ public class JQuantsApiClient {
                                             Map<String, StockMeta> validCache) {
         Set<String> targetSet = new HashSet<>(codes);
         // Free plan covers data from 12 weeks ago; use 13 weeks to stay within range
-        String date = LocalDate.now(JST).minusWeeks(13).toString();
+        // Adjust to nearest preceding weekday (fins/summary has no data on weekends)
+        LocalDate baseDate = LocalDate.now(JST).minusWeeks(13);
+        while (baseDate.getDayOfWeek() == DayOfWeek.SATURDAY
+            || baseDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            baseDate = baseDate.minusDays(1);
+        }
+        String date = baseDate.toString();
         log.info("Fetching fins/summary (date={}) for {} target stock(s)...", date, codes.size());
 
         int saved = 0;
