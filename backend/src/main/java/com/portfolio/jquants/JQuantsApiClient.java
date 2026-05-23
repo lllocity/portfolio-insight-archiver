@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -151,60 +152,67 @@ public class JQuantsApiClient {
     @SuppressWarnings("unchecked")
     private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
                                             Map<String, StockMeta> validCache) {
-        log.info("Fetching fins/summary dividend info for {} stock(s)...", codes.size());
-        for (String code : codes) {
-            StockMeta meta = validCache.get(code);
-            if (meta == null) continue;
+        Set<String> targetSet = new HashSet<>(codes);
+        // Free plan covers data from 12 weeks ago; use 13 weeks to stay within range
+        String date = LocalDate.now(JST).minusWeeks(13).toString();
+        log.info("Fetching fins/summary (date={}) for {} target stock(s)...", date, codes.size());
 
-            String apiCode = code + "0";  // 4-char → 5-char (e.g. "7203" → "72030")
+        int saved = 0;
+        String paginationKey = null;
+        do {
             try {
-                Thread.sleep(500);  // conservative pacing for free-plan rate limit
+                final String pk = paginationKey;
                 Map<?, ?> response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/v2/fins/summary")
-                        .queryParam("code", apiCode).build())
+                    .uri(uriBuilder -> {
+                        var builder = uriBuilder.path("/v2/fins/summary")
+                            .queryParam("date", date);
+                        if (pk != null) builder = builder.queryParam("pagination_key", pk);
+                        return builder.build();
+                    })
                     .header("x-api-key", apiKey)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 30)))
                     .block();
 
-                if (response == null) {
-                    log.info("fins/summary: null response for {}", code);
-                    continue;
+                if (response == null) break;
+                List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+                if (data == null) break;
+
+                for (Map<String, Object> item : data) {
+                    String rawCode = getString(item, "Code");
+                    if (rawCode == null) continue;
+                    String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
+                    if (!targetSet.contains(code)) continue;
+
+                    StockMeta meta = validCache.get(code);
+                    if (meta == null) continue;
+
+                    // Prefer forecast DPS; fall back to result when forecast is zero
+                    BigDecimal dps = parseDecimal(getString(item, "FDivAnn"));
+                    if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) {
+                        dps = parseDecimal(getString(item, "DivAnn"));
+                    }
+                    BigDecimal q2Forecast = parseDecimal(getString(item, "FDiv2Q"));
+                    BigDecimal q2Result   = parseDecimal(getString(item, "Div2Q"));
+                    boolean hasInterim =
+                        (q2Forecast != null && q2Forecast.compareTo(BigDecimal.ZERO) > 0)
+                        || (q2Result  != null && q2Result.compareTo(BigDecimal.ZERO)  > 0);
+
+                    meta.setDividendInfo(meta.getFiscalYearEndMonth(), dps, hasInterim);
+                    cacheRepository.save(meta);
+                    log.info("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
+                    saved++;
                 }
-                List<Map<String, Object>> statements =
-                    (List<Map<String, Object>>) response.get("data");
-                if (statements == null || statements.isEmpty()) {
-                    log.info("fins/summary: no data for {} (non-dividend or data unavailable)", code);
-                    continue;
-                }
 
-                // Records are returned in ascending disclosure-number order; last = most recent
-                Map<String, Object> latest = statements.get(statements.size() - 1);
-
-                // Prefer forecast DPS; fall back to result when forecast is zero
-                BigDecimal dps = parseDecimal(getString(latest, "FDivAnn"));
-                if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) {
-                    dps = parseDecimal(getString(latest, "DivAnn"));
-                }
-
-                BigDecimal q2Forecast = parseDecimal(getString(latest, "FDiv2Q"));
-                BigDecimal q2Result   = parseDecimal(getString(latest, "Div2Q"));
-                boolean hasInterim =
-                    (q2Forecast != null && q2Forecast.compareTo(BigDecimal.ZERO) > 0)
-                    || (q2Result  != null && q2Result.compareTo(BigDecimal.ZERO)  > 0);
-
-                meta.setDividendInfo(meta.getFiscalYearEndMonth(), dps, hasInterim);
-                cacheRepository.save(meta);
-                log.info("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                paginationKey = (String) response.get("pagination_key");
             } catch (Exception e) {
-                log.warn("Failed fins/summary for {}: {}", code, e.getMessage());
+                log.warn("Failed fins/summary bulk fetch: {}", e.getMessage());
+                break;
             }
-        }
+        } while (paginationKey != null);
+
+        log.info("Saved dividend info for {} stock(s) from fins/summary.", saved);
     }
 
     private String getString(Map<String, Object> map, String key) {
