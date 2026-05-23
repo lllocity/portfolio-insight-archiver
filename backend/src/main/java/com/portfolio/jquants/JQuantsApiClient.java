@@ -78,8 +78,24 @@ public class JQuantsApiClient {
         if (!staleCodes.isEmpty()) {
             // Fetch ALL listed stocks in one API call, save only what we need
             fetchAllAndCache(new HashSet<>(staleCodes), apiKey, validCache);
-            // Fetch dividend info per ticker (fins/statements)
-            fetchAndCacheDividendInfo(staleCodes, apiKey, validCache);
+        }
+
+        // Also (re-)fetch dividend info for cached entries whose dividend data is still null
+        // — handles migration from before dividend fields were added
+        List<String> missingDividend = stockCodes.stream()
+            .filter(code -> {
+                StockMeta m = validCache.get(code);
+                return m != null && m.getAnnualDividendPerShare() == null
+                    && m.getHasInterimDividend() == null;
+            })
+            .toList();
+
+        List<String> dividendFetchCodes = new ArrayList<>(staleCodes);
+        for (String code : missingDividend) {
+            if (!dividendFetchCodes.contains(code)) dividendFetchCodes.add(code);
+        }
+        if (!dividendFetchCodes.isEmpty()) {
+            fetchAndCacheDividendInfo(dividendFetchCodes, apiKey, validCache);
         }
 
         return stockCodes.stream()
