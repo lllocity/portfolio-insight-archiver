@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -42,34 +41,21 @@ public class AiPromptGeneratorService {
         sb.append("| 総損益 | ").append(formatPl(summary.totalProfitLoss()))
           .append("（").append(formatPct(summary.totalProfitLossPct())).append("） |\n");
         sb.append("| 保有銘柄数 | ").append(summary.holdingCount()).append("銘柄 |\n");
-        sb.append("| セクター数 | ").append(summary.sectorCount()).append("業種 |\n");
-        BigDecimal totalDividend = analysis.enrichedHoldings().stream()
-            .map(EnrichedHolding::getEstimatedAnnualDividend)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        String dividendStr = totalDividend.compareTo(BigDecimal.ZERO) > 0
-            ? "¥" + JPY_FORMAT.format(totalDividend) : "-";
-        sb.append("| 年間配当合計（推定） | ").append(dividendStr).append(" |\n\n");
+        sb.append("| セクター数 | ").append(summary.sectorCount()).append("業種 |\n\n");
 
         // Section 2: Holdings with metrics
         sb.append("## 2. 保有銘柄・指標データ\n\n");
-        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) | 年間配当/株 | 受取配当額(年) | 支払い時期 |\n");
-        sb.append("|---|---|---|---|---|---|---|---|---|\n");
+        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) |\n");
+        sb.append("|---|---|---|---|---|---|\n");
         for (EnrichedHolding eh : analysis.enrichedHoldings()) {
             Holding h = eh.holding();
             StockMeta meta = eh.stockMeta();
-            BigDecimal dps = meta != null ? meta.getAnnualDividendPerShare() : null;
-            BigDecimal ead = eh.getEstimatedAnnualDividend();
-            String months = eh.getDividendMonths();
             sb.append("| ").append(h.getTickerCode()).append(" | ");
             sb.append(meta != null ? nvl(meta.getCompanyName()) : "-").append(" | ");
             sb.append(eh.getSectorName()).append(" | ");
             sb.append(h.getTotalQuantity()).append(" | ");
             sb.append(JPY_FORMAT.format(h.getTotalValuation())).append(" | ");
-            sb.append(h.getTotalProfitLossPct()).append(" | ");
-            sb.append(dps != null ? "¥" + JPY_FORMAT.format(dps) : "-").append(" | ");
-            sb.append(ead != null ? "¥" + JPY_FORMAT.format(ead) : "-").append(" | ");
-            sb.append(months != null ? months : "-").append(" |\n");
+            sb.append(h.getTotalProfitLossPct()).append(" |\n");
         }
         sb.append("\n");
 

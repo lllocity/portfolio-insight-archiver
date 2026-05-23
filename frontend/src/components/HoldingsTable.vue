@@ -38,8 +38,6 @@
           >
             損益率 {{ sortIcon('totalProfitLossPct') }}
           </th>
-          <th scope="col" class="px-3 py-2 text-right font-medium whitespace-nowrap">受取配当額(年)</th>
-          <th scope="col" class="px-3 py-2 text-left font-medium">支払い時期(概算)</th>
           <th scope="col" class="w-48 px-3 py-2 text-left font-medium">メモ</th>
         </tr>
       </thead>
@@ -63,7 +61,7 @@
           </td>
           <td class="px-3 py-2">
             <span
-              class="rounded-full px-2 py-0.5 text-xs font-medium text-white whitespace-nowrap"
+              class="rounded-full px-2 py-0.5 text-xs font-medium text-white"
               :style="{ backgroundColor: sectorColorMap[h.sectorName] ?? '#9ca3af' }"
             >{{ h.sectorName }}</span>
           </td>
@@ -74,12 +72,6 @@
           </td>
           <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
-          </td>
-          <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600">
-            {{ h.estimatedAnnualDividend ? f.formatCurrency(h.estimatedAnnualDividend) : '―' }}
-          </td>
-          <td class="whitespace-nowrap px-3 py-2 text-xs text-gray-500">
-            {{ h.dividendMonths ?? '―' }}
           </td>
           <td class="w-48 px-3 py-2">
             <template v-if="editingTicker === h.tickerCode">

@@ -46,7 +46,6 @@ class AiPromptGeneratorServiceTest {
         assertThat(prompt).contains("| スナップショット日 | 2024-03-01 |");
         assertThat(prompt).contains("| 総評価額 | ¥280,000 |");
         assertThat(prompt).contains("| 保有銘柄数 | 1銘柄 |");
-        assertThat(prompt).contains("| 年間配当合計（推定） |");
     }
 
     @Test
@@ -125,28 +124,6 @@ class AiPromptGeneratorServiceTest {
         assertThat(prompt).contains("- [ ] 整理・売却を検討すべき銘柄とその理由（機会コスト比較含む）");
         assertThat(prompt).contains("- [ ] LINEヤフー削減タイミングの評価");
         assertThat(prompt).contains("- [ ] その他：（自由記入）");
-    }
-
-    @Test
-    void generate_holdingsTableIncludesDividend() {
-        StockMeta meta = new StockMeta("7203", "トヨタ自動車", "0050", "輸送用機器",
-            null, null, null, null, null);
-        meta.setDividendInfo(3, new BigDecimal("70"), true);  // 3月決算・中間あり
-        EnrichedHolding eh = new EnrichedHolding(holding("7203"), meta);
-        PortfolioSummary summary = new PortfolioSummary(
-            LocalDate.of(2024, 3, 1), new BigDecimal("280000"),
-            new BigDecimal("30000"), new BigDecimal("12.00"), 1, 1);
-        PortfolioAnalysisResult analysis = new PortfolioAnalysisResult(
-            summary, List.of(eh),
-            List.of(new SectorAllocation("輸送用機器", new BigDecimal("280000"), new BigDecimal("100.00"), 1)),
-            SnapshotDiff.empty()
-        );
-
-        String prompt = service.generate(analysis, Map.of());
-
-        assertThat(prompt).contains("| 年間配当/株 | 受取配当額(年) | 支払い時期 |");
-        assertThat(prompt).contains("| ¥70 | ¥7,000 | 〜5月・〜11月頃 |");
-        assertThat(prompt).contains("| 年間配当合計（推定） | ¥7,000 |");
     }
 
     private PortfolioAnalysisResult buildAnalysis() {

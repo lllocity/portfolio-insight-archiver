@@ -7,9 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -81,22 +79,6 @@ public class JQuantsApiClient {
             fetchAllAndCache(new HashSet<>(staleCodes), apiKey, validCache);
         }
 
-        // Also (re-)fetch dividend info for cached entries whose dividend data is still null
-        // — handles migration from before dividend fields were added
-        List<String> missingDividend = stockCodes.stream()
-            .filter(code -> {
-                StockMeta m = validCache.get(code);
-                return m != null && m.getAnnualDividendPerShare() == null
-                    && m.getHasInterimDividend() == null;
-            })
-            .toList();
-
-        List<String> dividendFetchCodes = new ArrayList<>(staleCodes);
-        dividendFetchCodes.addAll(missingDividend);
-        if (!dividendFetchCodes.isEmpty()) {
-            fetchAndCacheDividendInfo(dividendFetchCodes, apiKey, validCache);
-        }
-
         return stockCodes.stream()
             .map(code -> validCache.get(code))
             .filter(Objects::nonNull)
@@ -127,7 +109,6 @@ public class JQuantsApiClient {
                 String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
                 if (!targetCodes.contains(code)) continue;
 
-                Integer fiscalYearEndMonth = parseMonth(getString(item, "FiscalYearEndMonth"));
                 StockMeta meta = new StockMeta(
                     code,
                     getString(item, "CoName"),
@@ -135,7 +116,6 @@ public class JQuantsApiClient {
                     getString(item, "S33Nm"),
                     null, null, null, null, null
                 );
-                meta.setDividendInfo(fiscalYearEndMonth, null, null);
                 cacheRepository.save(meta);
                 validCache.put(code, meta);
                 saved++;
@@ -147,93 +127,9 @@ public class JQuantsApiClient {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
-                                            Map<String, StockMeta> validCache) {
-        Set<String> targetSet = new HashSet<>(codes);
-        String date = LocalDate.now(JST).toString();
-        log.info("Fetching fins/summary (date={}) for {} target stock(s)...", date, codes.size());
-
-        int saved = 0;
-        String paginationKey = null;
-        do {
-            try {
-                final String pk = paginationKey;
-                Map<?, ?> response = webClient.get()
-                    .uri(uriBuilder -> {
-                        var builder = uriBuilder.path("/v2/fins/summary")
-                            .queryParam("date", date);
-                        if (pk != null) builder = builder.queryParam("pagination_key", pk);
-                        return builder.build();
-                    })
-                    .header("x-api-key", apiKey)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 30)))
-                    .block();
-
-                if (response == null) break;
-                List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-                if (data == null) break;
-
-                for (Map<String, Object> item : data) {
-                    String rawCode = getString(item, "Code");
-                    if (rawCode == null) continue;
-                    String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
-                    if (!targetSet.contains(code)) continue;
-
-                    StockMeta meta = validCache.get(code);
-                    if (meta == null) continue;
-
-                    // Prefer forecast DPS; fall back to result when forecast is zero
-                    BigDecimal dps = parseDecimal(getString(item, "FDivAnn"));
-                    if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) {
-                        dps = parseDecimal(getString(item, "DivAnn"));
-                    }
-                    BigDecimal q2Forecast = parseDecimal(getString(item, "FDiv2Q"));
-                    BigDecimal q2Result   = parseDecimal(getString(item, "Div2Q"));
-                    boolean hasInterim =
-                        (q2Forecast != null && q2Forecast.compareTo(BigDecimal.ZERO) > 0)
-                        || (q2Result  != null && q2Result.compareTo(BigDecimal.ZERO)  > 0);
-
-                    meta.setDividendInfo(meta.getFiscalYearEndMonth(), dps, hasInterim);
-                    cacheRepository.save(meta);
-                    log.info("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
-                    saved++;
-                }
-
-                paginationKey = (String) response.get("pagination_key");
-            } catch (Exception e) {
-                log.warn("Failed fins/summary bulk fetch: {}", e.getMessage());
-                break;
-            }
-        } while (paginationKey != null);
-
-        log.info("Saved dividend info for {} stock(s) from fins/summary.", saved);
-    }
-
     private String getString(Map<String, Object> map, String key) {
         Object val = map.get(key);
         return val instanceof String s ? s : null;
-    }
-
-    private Integer parseMonth(String raw) {
-        if (raw == null || raw.isBlank()) return null;
-        try {
-            int month = Integer.parseInt(raw.trim());
-            return (month >= 1 && month <= 12) ? month : null;
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private BigDecimal parseDecimal(String raw) {
-        if (raw == null || raw.isBlank() || raw.equals("-")) return null;
-        try {
-            return new BigDecimal(raw.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
 }

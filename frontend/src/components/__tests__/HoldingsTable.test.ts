@@ -16,10 +16,9 @@ function holding(ticker: string, valuation: string, profitLoss: string): Enriche
     totalProfitLoss: profitLoss,
     totalProfitLossPct: '10.00',
     totalValuation: valuation,
-    memo: null,
-    annualDividendPerShare: null,
-    estimatedAnnualDividend: null,
-    dividendMonths: null
+    dividendYield: '2.5',
+    pbr: null,
+    per: null
   }
 }
 
@@ -29,7 +28,7 @@ describe('HoldingsTable', () => {
       holding('7203', '280000', '30000'),
       holding('6758', '2700000', '300000')
     ]
-    const wrapper = mount(HoldingsTable, { props: { holdings, sectors: [] } })
+    const wrapper = mount(HoldingsTable, { props: { holdings } })
     expect(wrapper.findAll('[data-testid="holdings-row"]')).toHaveLength(2)
   })
 
@@ -38,15 +37,15 @@ describe('HoldingsTable', () => {
       holding('7203', '280000', '30000'),
       holding('6758', '2700000', '300000')
     ]
-    const wrapper = mount(HoldingsTable, { props: { holdings, sectors: [] } })
+    const wrapper = mount(HoldingsTable, { props: { holdings } })
     const rows = wrapper.findAll('[data-testid="holdings-row"]')
     expect(rows[0].text()).toContain('6758')
     expect(rows[1].text()).toContain('7203')
   })
 
-  it('配当データがない場合は「―」を表示する', () => {
+  it('PBRがnullの場合は「―」を表示する', () => {
     const wrapper = mount(HoldingsTable, {
-      props: { holdings: [holding('7203', '280000', '30000')], sectors: [] }
+      props: { holdings: [holding('7203', '280000', '30000')] }
     })
     expect(wrapper.find('[data-testid="holdings-row"]').text()).toContain('―')
   })
