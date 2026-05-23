@@ -179,6 +179,12 @@ public class JQuantsApiClient {
                 List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
                 if (data == null) break;
 
+                log.info("fins/summary: received {} records (page paginationKey={})", data.size(), pk);
+                if (!data.isEmpty()) {
+                    log.info("fins/summary: first record keys = {}", data.get(0).keySet());
+                    log.info("fins/summary: first record sample = {}", data.get(0));
+                }
+
                 for (Map<String, Object> item : data) {
                     String rawCode = getString(item, "Code");
                     if (rawCode == null) continue;
