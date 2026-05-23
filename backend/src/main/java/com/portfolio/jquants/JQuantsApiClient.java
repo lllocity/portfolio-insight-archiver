@@ -92,9 +92,7 @@ public class JQuantsApiClient {
             .toList();
 
         List<String> dividendFetchCodes = new ArrayList<>(staleCodes);
-        for (String code : missingDividend) {
-            if (!dividendFetchCodes.contains(code)) dividendFetchCodes.add(code);
-        }
+        dividendFetchCodes.addAll(missingDividend);
         if (!dividendFetchCodes.isEmpty()) {
             fetchAndCacheDividendInfo(dividendFetchCodes, apiKey, validCache);
         }
