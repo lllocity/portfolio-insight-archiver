@@ -151,7 +151,7 @@ public class JQuantsApiClient {
     @SuppressWarnings("unchecked")
     private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
                                             Map<String, StockMeta> validCache) {
-        log.info("Fetching fins/statements dividend info for {} stock(s)...", codes.size());
+        log.info("Fetching fins/summary dividend info for {} stock(s)...", codes.size());
         for (String code : codes) {
             StockMeta meta = validCache.get(code);
             if (meta == null) continue;
@@ -160,7 +160,7 @@ public class JQuantsApiClient {
             try {
                 Thread.sleep(500);  // conservative pacing for free-plan rate limit
                 Map<?, ?> response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/v2/fins/statements")
+                    .uri(uriBuilder -> uriBuilder.path("/v2/fins/summary")
                         .queryParam("code", apiCode).build())
                     .header("x-api-key", apiKey)
                     .retrieve()
@@ -169,31 +169,27 @@ public class JQuantsApiClient {
                     .block();
 
                 if (response == null) {
-                    log.info("fins/statements: null response for {}", code);
+                    log.info("fins/summary: null response for {}", code);
                     continue;
                 }
                 List<Map<String, Object>> statements =
-                    (List<Map<String, Object>>) response.get("statements");
+                    (List<Map<String, Object>>) response.get("data");
                 if (statements == null || statements.isEmpty()) {
-                    log.info("fins/statements: no data for {} (non-dividend or data unavailable)", code);
+                    log.info("fins/summary: no data for {} (non-dividend or data unavailable)", code);
                     continue;
                 }
 
-                // Use the most recent disclosed statement
-                Map<String, Object> latest = statements.stream()
-                    .max(Comparator.comparing(
-                        s -> String.valueOf(s.getOrDefault("DisclosureDate", ""))))
-                    .orElse(null);
-                if (latest == null) continue;
+                // Records are returned in ascending disclosure-number order; last = most recent
+                Map<String, Object> latest = statements.get(statements.size() - 1);
 
                 // Prefer forecast DPS; fall back to result when forecast is zero
-                BigDecimal dps = parseDecimal(getString(latest, "ForecastDividendPerShareAnnual"));
+                BigDecimal dps = parseDecimal(getString(latest, "FDivAnn"));
                 if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) {
-                    dps = parseDecimal(getString(latest, "ResultDividendPerShareAnnual"));
+                    dps = parseDecimal(getString(latest, "DivAnn"));
                 }
 
-                BigDecimal q2Forecast = parseDecimal(getString(latest, "ForecastDividendPerShare2ndQuarter"));
-                BigDecimal q2Result   = parseDecimal(getString(latest, "ResultDividendPerShare2ndQuarter"));
+                BigDecimal q2Forecast = parseDecimal(getString(latest, "FDiv2Q"));
+                BigDecimal q2Result   = parseDecimal(getString(latest, "Div2Q"));
                 boolean hasInterim =
                     (q2Forecast != null && q2Forecast.compareTo(BigDecimal.ZERO) > 0)
                     || (q2Result  != null && q2Result.compareTo(BigDecimal.ZERO)  > 0);
@@ -206,7 +202,7 @@ public class JQuantsApiClient {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                log.warn("Failed fins/statements for {}: {}", code, e.getMessage());
+                log.warn("Failed fins/summary for {}: {}", code, e.getMessage());
             }
         }
     }
