@@ -38,7 +38,6 @@
           >
             損益率 {{ sortIcon('totalProfitLossPct') }}
           </th>
-          <th scope="col" class="px-3 py-2 text-right font-medium">年間配当/株</th>
           <th scope="col" class="px-3 py-2 text-right font-medium">受取配当額(年)</th>
           <th scope="col" class="px-3 py-2 text-left font-medium">支払い時期(概算)</th>
           <th scope="col" class="w-48 px-3 py-2 text-left font-medium">メモ</th>
@@ -64,7 +63,7 @@
           </td>
           <td class="px-3 py-2">
             <span
-              class="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+              class="rounded-full px-2 py-0.5 text-xs font-medium text-white whitespace-nowrap"
               :style="{ backgroundColor: sectorColorMap[h.sectorName] ?? '#9ca3af' }"
             >{{ h.sectorName }}</span>
           </td>
@@ -75,9 +74,6 @@
           </td>
           <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
-          </td>
-          <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600">
-            {{ h.annualDividendPerShare ? f.formatCurrency(h.annualDividendPerShare) : '―' }}
           </td>
           <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600">
             {{ h.estimatedAnnualDividend ? f.formatCurrency(h.estimatedAnnualDividend) : '―' }}

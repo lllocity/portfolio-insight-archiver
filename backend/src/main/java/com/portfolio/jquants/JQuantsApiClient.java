@@ -151,6 +151,7 @@ public class JQuantsApiClient {
     @SuppressWarnings("unchecked")
     private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
                                             Map<String, StockMeta> validCache) {
+        log.info("Fetching fins/statements dividend info for {} stock(s)...", codes.size());
         for (String code : codes) {
             StockMeta meta = validCache.get(code);
             if (meta == null) continue;
@@ -167,10 +168,16 @@ public class JQuantsApiClient {
                     .timeout(Duration.ofSeconds(timeoutSeconds))
                     .block();
 
-                if (response == null) continue;
+                if (response == null) {
+                    log.info("fins/statements: null response for {}", code);
+                    continue;
+                }
                 List<Map<String, Object>> statements =
                     (List<Map<String, Object>>) response.get("statements");
-                if (statements == null || statements.isEmpty()) continue;
+                if (statements == null || statements.isEmpty()) {
+                    log.info("fins/statements: no data for {} (non-dividend or data unavailable)", code);
+                    continue;
+                }
 
                 // Use the most recent disclosed statement
                 Map<String, Object> latest = statements.stream()
@@ -193,13 +200,13 @@ public class JQuantsApiClient {
 
                 meta.setDividendInfo(meta.getFiscalYearEndMonth(), dps, hasInterim);
                 cacheRepository.save(meta);
-                log.debug("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
+                log.info("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                log.debug("Skipping fins/statements for {}: {}", code, e.getMessage());
+                log.warn("Failed fins/statements for {}: {}", code, e.getMessage());
             }
         }
     }
