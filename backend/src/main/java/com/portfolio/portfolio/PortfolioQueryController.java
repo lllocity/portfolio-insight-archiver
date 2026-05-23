@@ -82,6 +82,7 @@ public class PortfolioQueryController {
         List<EnrichedHoldingDto> holdingDtos = enriched.stream().map(eh -> {
             Holding h = eh.holding();
             StockMeta m = eh.stockMeta();
+            java.math.BigDecimal ead = eh.getEstimatedAnnualDividend();
             return new EnrichedHoldingDto(
                 h.getTickerCode(),
                 m != null ? m.getCompanyName() : null,
@@ -94,7 +95,11 @@ public class PortfolioQueryController {
                 h.getTotalProfitLoss().toPlainString(),
                 h.getTotalProfitLossPct().toPlainString(),
                 h.getTotalValuation().toPlainString(),
-                memoMap.get(h.getTickerCode())
+                memoMap.get(h.getTickerCode()),
+                m != null && m.getAnnualDividendPerShare() != null
+                    ? m.getAnnualDividendPerShare().toPlainString() : null,
+                ead != null ? ead.toPlainString() : null,
+                eh.getDividendMonths()
             );
         }).toList();
 

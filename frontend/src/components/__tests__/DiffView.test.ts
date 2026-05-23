@@ -20,7 +20,10 @@ describe('DiffView', () => {
   it('追加銘柄を表示する', () => {
     const diff: SnapshotDiff = {
       ...emptyDiff,
-      addedTickers: ['7203', '6758'],
+      addedTickers: [
+        { tickerCode: '7203', companyName: 'トヨタ自動車' },
+        { tickerCode: '6758', companyName: 'ソニーグループ' }
+      ],
       valuationChange: '200000'
     }
     const wrapper = mount(DiffView, { props: { diff } })
@@ -32,7 +35,7 @@ describe('DiffView', () => {
   it('除去銘柄を表示する', () => {
     const diff: SnapshotDiff = {
       ...emptyDiff,
-      removedTickers: ['4689'],
+      removedTickers: [{ tickerCode: '4689', companyName: 'ヤフー' }],
       valuationChange: '-50000'
     }
     const wrapper = mount(DiffView, { props: { diff } })

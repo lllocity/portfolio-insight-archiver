@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -77,6 +78,8 @@ public class JQuantsApiClient {
         if (!staleCodes.isEmpty()) {
             // Fetch ALL listed stocks in one API call, save only what we need
             fetchAllAndCache(new HashSet<>(staleCodes), apiKey, validCache);
+            // Fetch dividend info per ticker (fins/statements)
+            fetchAndCacheDividendInfo(staleCodes, apiKey, validCache);
         }
 
         return stockCodes.stream()
@@ -109,6 +112,7 @@ public class JQuantsApiClient {
                 String code = rawCode.length() == 5 ? rawCode.substring(0, 4) : rawCode;
                 if (!targetCodes.contains(code)) continue;
 
+                Integer fiscalYearEndMonth = parseMonth(getString(item, "FiscalYearEndMonth"));
                 StockMeta meta = new StockMeta(
                     code,
                     getString(item, "CoName"),
@@ -116,6 +120,7 @@ public class JQuantsApiClient {
                     getString(item, "S33Nm"),
                     null, null, null, null, null
                 );
+                meta.setDividendInfo(fiscalYearEndMonth, null, null);
                 cacheRepository.save(meta);
                 validCache.put(code, meta);
                 saved++;
@@ -127,9 +132,84 @@ public class JQuantsApiClient {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private void fetchAndCacheDividendInfo(List<String> codes, String apiKey,
+                                            Map<String, StockMeta> validCache) {
+        for (String code : codes) {
+            StockMeta meta = validCache.get(code);
+            if (meta == null) continue;
+
+            String apiCode = code + "0";  // 4-char → 5-char (e.g. "7203" → "72030")
+            try {
+                Thread.sleep(500);  // conservative pacing for free-plan rate limit
+                Map<?, ?> response = webClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/v2/fins/statements")
+                        .queryParam("code", apiCode).build())
+                    .header("x-api-key", apiKey)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .block();
+
+                if (response == null) continue;
+                List<Map<String, Object>> statements =
+                    (List<Map<String, Object>>) response.get("statements");
+                if (statements == null || statements.isEmpty()) continue;
+
+                // Use the most recent disclosed statement
+                Map<String, Object> latest = statements.stream()
+                    .max(Comparator.comparing(
+                        s -> String.valueOf(s.getOrDefault("DisclosureDate", ""))))
+                    .orElse(null);
+                if (latest == null) continue;
+
+                // Prefer forecast DPS; fall back to result when forecast is zero
+                BigDecimal dps = parseDecimal(getString(latest, "ForecastDividendPerShareAnnual"));
+                if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) {
+                    dps = parseDecimal(getString(latest, "ResultDividendPerShareAnnual"));
+                }
+
+                BigDecimal q2Forecast = parseDecimal(getString(latest, "ForecastDividendPerShare2ndQuarter"));
+                BigDecimal q2Result   = parseDecimal(getString(latest, "ResultDividendPerShare2ndQuarter"));
+                boolean hasInterim =
+                    (q2Forecast != null && q2Forecast.compareTo(BigDecimal.ZERO) > 0)
+                    || (q2Result  != null && q2Result.compareTo(BigDecimal.ZERO)  > 0);
+
+                meta.setDividendInfo(meta.getFiscalYearEndMonth(), dps, hasInterim);
+                cacheRepository.save(meta);
+                log.debug("Dividend info for {}: DPS={}, hasInterim={}", code, dps, hasInterim);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.debug("Skipping fins/statements for {}: {}", code, e.getMessage());
+            }
+        }
+    }
+
     private String getString(Map<String, Object> map, String key) {
         Object val = map.get(key);
         return val instanceof String s ? s : null;
+    }
+
+    private Integer parseMonth(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            int month = Integer.parseInt(raw.trim());
+            return (month >= 1 && month <= 12) ? month : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private BigDecimal parseDecimal(String raw) {
+        if (raw == null || raw.isBlank() || raw.equals("-")) return null;
+        try {
+            return new BigDecimal(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
 }

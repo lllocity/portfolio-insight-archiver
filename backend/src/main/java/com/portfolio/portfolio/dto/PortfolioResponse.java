@@ -29,7 +29,10 @@ public record PortfolioResponse(
         String totalProfitLoss,
         String totalProfitLossPct,
         String totalValuation,
-        String memo
+        String memo,
+        String annualDividendPerShare,    // nullable
+        String estimatedAnnualDividend,   // nullable
+        String dividendMonths             // nullable, e.g. "〜5月・〜11月頃"
     ) {}
 
     public record SectorAllocationDto(

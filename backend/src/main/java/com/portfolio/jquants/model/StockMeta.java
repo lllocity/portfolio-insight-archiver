@@ -41,6 +41,15 @@ public class StockMeta {
     @Column(name = "per")
     private BigDecimal per;
 
+    @Column(name = "fiscal_year_end_month")
+    private Integer fiscalYearEndMonth;
+
+    @Column(name = "annual_dividend_per_share")
+    private BigDecimal annualDividendPerShare;
+
+    @Column(name = "has_interim_dividend")
+    private Boolean hasInterimDividend;
+
     @Column(name = "cached_at", nullable = false)
     @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime cachedAt;
@@ -71,7 +80,17 @@ public class StockMeta {
     public LocalDate getEarningsDate() { return earningsDate; }
     public BigDecimal getPbr() { return pbr; }
     public BigDecimal getPer() { return per; }
+    public Integer getFiscalYearEndMonth() { return fiscalYearEndMonth; }
+    public BigDecimal getAnnualDividendPerShare() { return annualDividendPerShare; }
+    public Boolean getHasInterimDividend() { return hasInterimDividend; }
     public LocalDateTime getCachedAt() { return cachedAt; }
+
+    public void setDividendInfo(Integer fiscalYearEndMonth, BigDecimal annualDividendPerShare,
+                                 Boolean hasInterimDividend) {
+        this.fiscalYearEndMonth = fiscalYearEndMonth;
+        this.annualDividendPerShare = annualDividendPerShare;
+        this.hasInterimDividend = hasInterimDividend;
+    }
 
     public void refreshCachedAt() {
         this.cachedAt = LocalDateTime.now();
