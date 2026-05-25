@@ -105,6 +105,40 @@ class AiPromptGeneratorServiceTest {
     }
 
     @Test
+    void generate_withDividendData_showsDividendColumnsAndSummary() {
+        StockMeta meta = new StockMeta("7203", "トヨタ自動車", "0050", "輸送用機器",
+            null, null, null, null, null);
+        meta.setDividendData(new BigDecimal("10"), "3,9");
+        EnrichedHolding eh = new EnrichedHolding(holding("7203"), meta);
+        PortfolioSummary summary = new PortfolioSummary(
+            LocalDate.of(2024, 3, 1), new BigDecimal("280000"),
+            new BigDecimal("30000"), new BigDecimal("12.00"), 1, 1);
+        PortfolioAnalysisResult analysis = new PortfolioAnalysisResult(
+            summary, List.of(eh),
+            List.of(new SectorAllocation("輸送用機器", new BigDecimal("280000"), new BigDecimal("100.00"), 1)),
+            SnapshotDiff.empty());
+
+        String prompt = service.generate(analysis, Map.of());
+
+        assertThat(prompt).contains("年間配当額(円)");
+        assertThat(prompt).contains("支払い月");
+        assertThat(prompt).contains("1,000");   // 10 dps × 100 shares
+        assertThat(prompt).contains("3月・9月頃");
+        assertThat(prompt).contains("年間配当合計（予想）");
+        assertThat(prompt).contains("配当利回り（予想）");
+        assertThat(prompt).contains("配当収入の評価");
+        assertThat(prompt).contains("配当の観点から買い増し・整理を検討すべき銘柄");
+    }
+
+    @Test
+    void generate_noDividendData_showsDashes() {
+        String prompt = service.generate(buildAnalysis(), Map.of());
+
+        assertThat(prompt).contains("年間配当額(円)");
+        assertThat(prompt).doesNotContain("年間配当合計（予想）");
+    }
+
+    @Test
     void generate_investmentPolicyShowsPlaceholder() {
         PortfolioAnalysisResult analysis = buildAnalysis();
 

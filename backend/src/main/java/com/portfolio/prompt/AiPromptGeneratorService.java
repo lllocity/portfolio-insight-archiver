@@ -6,6 +6,7 @@ import com.portfolio.snapshot.model.Holding;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class AiPromptGeneratorService {
                 eh -> eh.stockMeta() != null ? nvl(eh.stockMeta().getCompanyName()) : "-"
             ));
 
+        BigDecimal totalDividend = analysis.enrichedHoldings().stream()
+            .map(EnrichedHolding::getEstimatedAnnualDividend)
+            .filter(d -> d != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // Section 1: Overview (table format)
         sb.append("# ポートフォリオ分析依頼\n\n");
         sb.append("## 1. ポートフォリオ概要\n\n");
@@ -41,21 +47,31 @@ public class AiPromptGeneratorService {
         sb.append("| 総損益 | ").append(formatPl(summary.totalProfitLoss()))
           .append("（").append(formatPct(summary.totalProfitLossPct())).append("） |\n");
         sb.append("| 保有銘柄数 | ").append(summary.holdingCount()).append("銘柄 |\n");
-        sb.append("| セクター数 | ").append(summary.sectorCount()).append("業種 |\n\n");
+        sb.append("| セクター数 | ").append(summary.sectorCount()).append("業種 |\n");
+        if (totalDividend.compareTo(BigDecimal.ZERO) > 0) {
+            sb.append("| 年間配当合計（予想） | ¥").append(JPY_FORMAT.format(totalDividend)).append(" |\n");
+            BigDecimal yield = totalDividend.divide(summary.totalValuation(), 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP);
+            sb.append("| 配当利回り（予想） | ").append(yield).append("% |\n");
+        }
+        sb.append("\n");
 
         // Section 2: Holdings with metrics
         sb.append("## 2. 保有銘柄・指標データ\n\n");
-        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) |\n");
-        sb.append("|---|---|---|---|---|---|\n");
+        sb.append("| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) | 年間配当額(円) | 支払い月 |\n");
+        sb.append("|---|---|---|---|---|---|---|---|\n");
         for (EnrichedHolding eh : analysis.enrichedHoldings()) {
             Holding h = eh.holding();
             StockMeta meta = eh.stockMeta();
+            BigDecimal dividend = eh.getEstimatedAnnualDividend();
             sb.append("| ").append(h.getTickerCode()).append(" | ");
             sb.append(meta != null ? nvl(meta.getCompanyName()) : "-").append(" | ");
             sb.append(eh.getSectorName()).append(" | ");
             sb.append(h.getTotalQuantity()).append(" | ");
             sb.append(JPY_FORMAT.format(h.getTotalValuation())).append(" | ");
-            sb.append(h.getTotalProfitLossPct()).append(" |\n");
+            sb.append(h.getTotalProfitLossPct()).append(" | ");
+            sb.append(dividend != null ? JPY_FORMAT.format(dividend) : "-").append(" | ");
+            sb.append(eh.getDividendMonths() != null ? eh.getDividendMonths() : "-").append(" |\n");
         }
         sb.append("\n");
 
@@ -136,6 +152,8 @@ public class AiPromptGeneratorService {
         sb.append("- [ ] セクター偏りへの指摘と改善提案\n");
         sb.append("- [ ] 投資方針に合致しているかの評価\n");
         sb.append("- [ ] LINEヤフー削減タイミングの評価\n");
+        sb.append("- [ ] 配当収入の評価（配当利回り水準・月別支払い分散の偏り）\n");
+        sb.append("- [ ] 配当の観点から買い増し・整理を検討すべき銘柄\n");
         sb.append("- [ ] その他：（自由記入）\n\n");
 
         // Section 8: Free-form questions (placeholder)
