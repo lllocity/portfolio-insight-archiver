@@ -3,6 +3,11 @@ package com.portfolio.analysis.dto;
 import com.portfolio.jquants.model.StockMeta;
 import com.portfolio.snapshot.model.Holding;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 public record EnrichedHolding(
     Holding holding,
     StockMeta stockMeta  // nullable — null when J-Quants fetch failed or for mutual funds
@@ -20,5 +25,20 @@ public record EnrichedHolding(
             return "不明";
         }
         return stockMeta.getSector33Name();
+    }
+
+    public BigDecimal getEstimatedAnnualDividend() {
+        if (isMutualFund() || stockMeta == null) return null;
+        BigDecimal dps = stockMeta.getAnnualDividendPerShare();
+        if (dps == null || dps.compareTo(BigDecimal.ZERO) == 0) return null;
+        return dps.multiply(holding.getTotalQuantity()).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    public String getDividendMonths() {
+        if (isMutualFund() || stockMeta == null || stockMeta.getDividendMonths() == null) return null;
+        String[] months = stockMeta.getDividendMonths().split(",");
+        return Arrays.stream(months)
+            .map(m -> m + "月")
+            .collect(Collectors.joining("・")) + "頃";
     }
 }

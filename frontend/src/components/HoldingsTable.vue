@@ -38,6 +38,15 @@
           >
             損益率 {{ sortIcon('totalProfitLossPct') }}
           </th>
+          <th
+            scope="col"
+            class="cursor-pointer px-3 py-2 text-right font-medium hover:text-gray-800"
+            :aria-sort="sortAriaLabel('estimatedAnnualDividend')"
+            @click="toggleSort('estimatedAnnualDividend')"
+          >
+            受取配当額(年) {{ sortIcon('estimatedAnnualDividend') }}
+          </th>
+          <th scope="col" class="px-3 py-2 text-left font-medium">支払い時期（推定）</th>
           <th scope="col" class="w-48 px-3 py-2 text-left font-medium">メモ</th>
         </tr>
       </thead>
@@ -59,9 +68,9 @@
             >{{ h.companyName }}</a>
             <span v-else>{{ f.nullish(h.companyName) }}</span>
           </td>
-          <td class="px-3 py-2">
+          <td class="whitespace-nowrap px-3 py-2">
             <span
-              class="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+              class="whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium text-white"
               :style="{ backgroundColor: sectorColorMap[h.sectorName] ?? '#9ca3af' }"
             >{{ h.sectorName }}</span>
           </td>
@@ -73,6 +82,8 @@
           <td class="whitespace-nowrap px-3 py-2 text-right" :class="f.colorClass(h.totalProfitLossPct)">
             {{ f.formatPct(h.totalProfitLossPct) }}
           </td>
+          <td class="px-3 py-2 text-right">{{ h.estimatedAnnualDividend ? f.formatCurrency(h.estimatedAnnualDividend) : '-' }}</td>
+          <td class="px-3 py-2 text-xs text-gray-500">{{ h.dividendMonths ?? '-' }}</td>
           <td class="w-48 px-3 py-2">
             <template v-if="editingTicker === h.tickerCode">
               <div class="flex flex-col gap-1">
@@ -156,7 +167,7 @@ async function saveMemo(tickerCode: string) {
   editingContent.value = ''
 }
 
-type NumericSortKey = 'totalValuation' | 'totalProfitLoss' | 'totalProfitLossPct'
+type NumericSortKey = 'totalValuation' | 'totalProfitLoss' | 'totalProfitLossPct' | 'estimatedAnnualDividend'
 type StringSortKey = 'sectorName'
 type SortKey = NumericSortKey | StringSortKey
 const sortKey = ref<SortKey>('totalValuation')
@@ -187,8 +198,13 @@ const sortedHoldings = computed(() => {
       const cmp = a.sectorName.localeCompare(b.sectorName, 'ja')
       return sortDir.value === 'asc' ? cmp : -cmp
     }
-    const av = parseFloat(a[sortKey.value])
-    const bv = parseFloat(b[sortKey.value])
+    const aRaw = a[sortKey.value]
+    const bRaw = b[sortKey.value]
+    if (aRaw == null && bRaw == null) return 0
+    if (aRaw == null) return 1
+    if (bRaw == null) return -1
+    const av = parseFloat(aRaw)
+    const bv = parseFloat(bRaw)
     return sortDir.value === 'asc' ? av - bv : bv - av
   })
 })

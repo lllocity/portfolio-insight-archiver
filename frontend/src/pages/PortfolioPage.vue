@@ -28,7 +28,7 @@
 
     <template v-else>
       <!-- サマリーカード -->
-      <div class="mb-6 grid gap-4 sm:grid-cols-3">
+      <div class="mb-6 grid gap-4 sm:grid-cols-4">
         <SummaryCard
           label="総評価額"
           :value="f.formatCurrency(store.data.snapshot.totalValuation)"
@@ -43,6 +43,11 @@
           label="保有銘柄数"
           :value="`${store.data.snapshot.holdingCount} 銘柄`"
           :sub-value="store.data.snapshot.snapshotDate"
+        />
+        <SummaryCard
+          label="年間配当合計（予想）"
+          :value="totalAnnualDividend !== null ? f.formatCurrency(totalAnnualDividend) : '-'"
+          :sub-value="dividendYield ?? undefined"
         />
       </div>
 
@@ -66,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
 import { useFormatters } from '@/composables/useFormatters'
 import CsvImportForm from '@/components/CsvImportForm.vue'
@@ -76,6 +82,22 @@ import DiffView from '@/components/DiffView.vue'
 
 const store = usePortfolioStore()
 const f = useFormatters()
+
+const totalAnnualDividend = computed<string | null>(() => {
+  if (!store.data) return null
+  const total = store.data.holdings
+    .map(h => parseFloat(h.estimatedAnnualDividend ?? '0'))
+    .reduce((a, b) => a + b, 0)
+  return total > 0 ? total.toString() : null
+})
+
+const dividendYield = computed<string | null>(() => {
+  if (!store.data || totalAnnualDividend.value === null) return null
+  const valuation = parseFloat(store.data.snapshot.totalValuation)
+  if (valuation === 0) return null
+  const pct = (parseFloat(totalAnnualDividend.value) / valuation * 100).toFixed(2)
+  return `配当利回り ${pct}%`
+})
 
 async function onImported() {
   await store.reload()

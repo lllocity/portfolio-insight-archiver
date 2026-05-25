@@ -29,7 +29,9 @@ public record PortfolioResponse(
         String totalProfitLoss,
         String totalProfitLossPct,
         String totalValuation,
-        String memo
+        String memo,
+        String estimatedAnnualDividend,
+        String dividendMonths
     ) {}
 
     public record SectorAllocationDto(

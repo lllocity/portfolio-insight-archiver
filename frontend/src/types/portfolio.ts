@@ -22,6 +22,8 @@ export interface EnrichedHolding {
   totalProfitLossPct: string
   totalValuation: string
   memo: string | null
+  estimatedAnnualDividend: string | null
+  dividendMonths: string | null
 }
 
 export interface SectorAllocation {

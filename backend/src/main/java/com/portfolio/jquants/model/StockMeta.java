@@ -41,6 +41,12 @@ public class StockMeta {
     @Column(name = "per")
     private BigDecimal per;
 
+    @Column(name = "annual_dividend_per_share")
+    private BigDecimal annualDividendPerShare;
+
+    @Column(name = "dividend_months")
+    private String dividendMonths;
+
     @Column(name = "cached_at", nullable = false)
     @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime cachedAt;
@@ -71,9 +77,16 @@ public class StockMeta {
     public LocalDate getEarningsDate() { return earningsDate; }
     public BigDecimal getPbr() { return pbr; }
     public BigDecimal getPer() { return per; }
+    public BigDecimal getAnnualDividendPerShare() { return annualDividendPerShare; }
+    public String getDividendMonths() { return dividendMonths; }
     public LocalDateTime getCachedAt() { return cachedAt; }
 
     public void refreshCachedAt() {
         this.cachedAt = LocalDateTime.now();
+    }
+
+    public void setDividendData(BigDecimal dps, String months) {
+        this.annualDividendPerShare = dps;
+        this.dividendMonths = months;
     }
 }

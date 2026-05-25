@@ -42,6 +42,9 @@ dependencies {
     // CSV parsing (Shift-JIS / SBI証券)
     implementation("org.apache.commons:commons-csv:1.11.0")
 
+    // HTML scraping (Yahoo Finance dividend data)
+    implementation("org.jsoup:jsoup:1.18.3")
+
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")

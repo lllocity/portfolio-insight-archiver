@@ -94,7 +94,10 @@ public class PortfolioQueryController {
                 h.getTotalProfitLoss().toPlainString(),
                 h.getTotalProfitLossPct().toPlainString(),
                 h.getTotalValuation().toPlainString(),
-                memoMap.get(h.getTickerCode())
+                memoMap.get(h.getTickerCode()),
+                eh.getEstimatedAnnualDividend() != null
+                    ? eh.getEstimatedAnnualDividend().toPlainString() : null,
+                eh.getDividendMonths()
             );
         }).toList();
 

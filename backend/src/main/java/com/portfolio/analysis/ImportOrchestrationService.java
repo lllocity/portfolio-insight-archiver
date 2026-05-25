@@ -3,6 +3,7 @@ package com.portfolio.analysis;
 import com.portfolio.csv.CsvParserService;
 import com.portfolio.csv.dto.HoldingRecord;
 import com.portfolio.csv.dto.ImportResultDto;
+import com.portfolio.dividend.DividendScrapingService;
 import com.portfolio.jquants.JQuantsApiClient;
 import com.portfolio.memo.StockMemoRepository;
 import com.portfolio.snapshot.SnapshotService;
@@ -31,17 +32,20 @@ public class ImportOrchestrationService {
     private final SnapshotService snapshotService;
     private final JQuantsApiClient jQuantsApiClient;
     private final StockMemoRepository stockMemoRepository;
+    private final DividendScrapingService dividendScrapingService;
 
     public ImportOrchestrationService(
         CsvParserService csvParserService,
         SnapshotService snapshotService,
         JQuantsApiClient jQuantsApiClient,
-        StockMemoRepository stockMemoRepository
+        StockMemoRepository stockMemoRepository,
+        DividendScrapingService dividendScrapingService
     ) {
         this.csvParserService = csvParserService;
         this.snapshotService = snapshotService;
         this.jQuantsApiClient = jQuantsApiClient;
         this.stockMemoRepository = stockMemoRepository;
+        this.dividendScrapingService = dividendScrapingService;
     }
 
     public ImportResultDto executeFromUpload(InputStream csvStream, LocalDate snapshotDate) {
@@ -62,6 +66,8 @@ public class ImportOrchestrationService {
             log.warn("J-Quants API unavailable, continuing without metadata: {}", e.getMessage());
             warnings.add("J-Quants API is unavailable. Stock metadata will not be included.");
         }
+
+        dividendScrapingService.scrapeAndCacheAsync(tickerCodes);
 
         snapshotService.save(targetDate, records);
 
