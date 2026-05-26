@@ -126,11 +126,37 @@
         <div v-else-if="diffError" class="rounded bg-red-50 p-3 text-xs text-red-700">
           {{ diffError }}
         </div>
-        <div v-else-if="diff">
-          <p class="mb-2 text-xs text-gray-500">
-            比較: {{ fromDate }} → {{ toDate }}
-          </p>
-          <DiffView :diff="diff" />
+        <div v-else-if="diff" class="rounded-lg border border-gray-200 bg-white p-4">
+          <p class="mb-3 text-xs text-gray-500">比較: {{ fromDate }} → {{ toDate }}</p>
+          <div v-if="diff.addedTickers.length === 0 && diff.removedTickers.length === 0" class="text-sm text-gray-500">
+            この期間に売買なし
+          </div>
+          <div v-else class="space-y-2">
+            <div v-if="diff.addedTickers.length > 0">
+              <p class="mb-1 text-xs font-medium text-gray-500">買い足した銘柄</p>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="t in diff.addedTickers"
+                  :key="t.tickerCode"
+                  class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
+                >
+                  +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+                </span>
+              </div>
+            </div>
+            <div v-if="diff.removedTickers.length > 0">
+              <p class="mb-1 text-xs font-medium text-gray-500">売却した銘柄</p>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="t in diff.removedTickers"
+                  :key="t.tickerCode"
+                  class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+                >
+                  -{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -139,13 +165,11 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { fetchSnapshots, fetchSnapshotDiff } from '@/api/snapshotApi'
+import { fetchSnapshotDates, fetchSnapshotDiff } from '@/api/portfolioApi'
 import { fetchSnapshotHoldings } from '@/api/snapshotHoldingsApi'
 import type { SnapshotHolding } from '@/api/snapshotHoldingsApi'
 import { useFormatters } from '@/composables/useFormatters'
-import DiffView from '@/components/DiffView.vue'
-import type { SnapshotListItem } from '@/types/snapshot'
-import type { SnapshotDiff } from '@/types/portfolio'
+import type { SnapshotListItem, SnapshotDiff } from '@/types/portfolio'
 
 const f = useFormatters()
 const snapshots = ref<SnapshotListItem[]>([])
@@ -175,7 +199,7 @@ const toDate = computed(() =>
 onMounted(async () => {
   loading.value = true
   try {
-    snapshots.value = await fetchSnapshots()
+    snapshots.value = await fetchSnapshotDates()
   } finally {
     loading.value = false
   }
