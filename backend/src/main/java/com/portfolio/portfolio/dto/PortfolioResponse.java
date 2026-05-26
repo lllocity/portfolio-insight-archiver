@@ -40,7 +40,7 @@ public record PortfolioResponse(
         int holdingCount
     ) {}
 
-    public record TickerSummaryDto(String tickerCode, String companyName) {}
+    public record TickerSummaryDto(String tickerCode, String companyName, String totalQuantity) {}
 
     public record SnapshotDiffDto(
         List<TickerSummaryDto> addedTickers,

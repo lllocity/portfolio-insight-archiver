@@ -140,7 +140,7 @@
                   :key="t.tickerCode"
                   class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
                 >
-                  +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+                  +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> {{ t.totalQuantity }}株
                 </span>
               </div>
             </div>
@@ -152,7 +152,7 @@
                   :key="t.tickerCode"
                   class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
                 >
-                  -{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+                  -{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> {{ t.totalQuantity }}株
                 </span>
               </div>
             </div>

@@ -28,6 +28,9 @@
         </select>
       </div>
 
+      <!-- エラー -->
+      <div v-if="error" class="mb-3 text-xs text-red-600">{{ error }}</div>
+
       <!-- セクターチャート2枚 -->
       <div v-if="loading" class="py-8 text-center text-sm text-gray-400">読み込み中...</div>
       <div v-else class="grid gap-4 md:grid-cols-2">
@@ -45,7 +48,7 @@
               :key="t.tickerCode"
               class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
             >
-              +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+              +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> {{ t.totalQuantity }}株
             </span>
           </div>
         </div>
@@ -57,7 +60,7 @@
               :key="t.tickerCode"
               class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
             >
-              -{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template>
+              -{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> {{ t.totalQuantity }}株
             </span>
           </div>
         </div>
@@ -80,21 +83,11 @@ const fromSectors = ref<SectorAllocation[]>([])
 const toSectors = ref<SectorAllocation[]>([])
 const diff = ref<SnapshotDiff | null>(null)
 const loading = ref(false)
+const error = ref<string | null>(null)
 
-onMounted(async () => {
-  dates.value = await fetchSnapshotDates()
-  if (dates.value.length >= 2) {
-    toDate.value = dates.value[0].snapshotDate
-    fromDate.value = dates.value[1].snapshotDate
-  } else if (dates.value.length === 1) {
-    toDate.value = dates.value[0].snapshotDate
-    fromDate.value = dates.value[0].snapshotDate
-  }
-})
-
-watch([fromDate, toDate], async ([from, to]) => {
-  if (!from || !to || from === to) return
+async function loadComparison(from: string, to: string) {
   loading.value = true
+  error.value = null
   try {
     const [fs, ts, d] = await Promise.all([
       fetchSnapshotSectors(from),
@@ -104,8 +97,24 @@ watch([fromDate, toDate], async ([from, to]) => {
     fromSectors.value = fs
     toSectors.value = ts
     diff.value = d
+  } catch {
+    error.value = 'データの取得に失敗しました'
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  dates.value = await fetchSnapshotDates()
+  if (dates.value.length >= 2) {
+    toDate.value = dates.value[0].snapshotDate
+    fromDate.value = dates.value[1].snapshotDate
+    await loadComparison(fromDate.value, toDate.value)
+  }
+})
+
+watch([fromDate, toDate], ([from, to]) => {
+  if (!from || !to || from === to) return
+  loadComparison(from, to)
 })
 </script>

@@ -132,11 +132,13 @@ public class SnapshotQueryController {
         SnapshotDiffDto dto = new SnapshotDiffDto(
             diff.addedHoldings().stream().map(h -> {
                 StockMeta m = metaMap.get(h.getTickerCode());
-                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
+                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null,
+                    h.getTotalQuantity().toPlainString());
             }).toList(),
             diff.removedHoldings().stream().map(h -> {
                 StockMeta m = metaMap.get(h.getTickerCode());
-                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
+                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null,
+                    h.getTotalQuantity().toPlainString());
             }).toList()
         );
 

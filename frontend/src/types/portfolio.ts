@@ -36,6 +36,7 @@ export interface SectorAllocation {
 export interface TickerSummary {
   tickerCode: string
   companyName: string | null
+  totalQuantity: string
 }
 
 export interface SnapshotDiff {
