@@ -62,9 +62,9 @@
         <HoldingsTable :holdings="store.data.holdings" :sectors="store.data.sectors" />
       </div>
 
-      <!-- 差分ビュー -->
+      <!-- スナップショット比較 -->
       <div>
-        <DiffView :diff="store.data.diff" />
+        <HistoryCompareView />
       </div>
     </template>
   </div>
@@ -78,7 +78,7 @@ import CsvImportForm from '@/components/CsvImportForm.vue'
 import SummaryCard from '@/components/SummaryCard.vue'
 import SectorChart from '@/components/SectorChart.vue'
 import HoldingsTable from '@/components/HoldingsTable.vue'
-import DiffView from '@/components/DiffView.vue'
+import HistoryCompareView from '@/components/HistoryCompareView.vue'
 
 const store = usePortfolioStore()
 const f = useFormatters()

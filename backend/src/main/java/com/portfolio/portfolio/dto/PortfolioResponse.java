@@ -5,8 +5,7 @@ import java.util.List;
 public record PortfolioResponse(
     SnapshotSummaryDto snapshot,
     List<EnrichedHoldingDto> holdings,
-    List<SectorAllocationDto> sectors,
-    SnapshotDiffDto diff
+    List<SectorAllocationDto> sectors
 ) {
 
     public record SnapshotSummaryDto(
@@ -45,18 +44,6 @@ public record PortfolioResponse(
 
     public record SnapshotDiffDto(
         List<TickerSummaryDto> addedTickers,
-        List<TickerSummaryDto> removedTickers,
-        List<HoldingChangeDto> changed,
-        String valuationChange,
-        String profitLossChange
-    ) {}
-
-    public record HoldingChangeDto(
-        String tickerCode,
-        String companyName,
-        String quantityBefore,
-        String quantityAfter,
-        String quantityDiff,
-        String valuationDiff
+        List<TickerSummaryDto> removedTickers
     ) {}
 }

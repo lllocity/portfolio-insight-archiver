@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4">
-    <h3 class="mb-3 text-sm font-semibold text-gray-700">セクター別構成比</h3>
+    <h3 class="mb-3 text-sm font-semibold text-gray-700">{{ title ?? 'セクター別構成比' }}</h3>
     <div class="flex flex-col gap-4 md:flex-row md:items-start">
       <!-- ドーナツチャート -->
       <div class="mx-auto w-64 shrink-0">
@@ -46,7 +46,7 @@ import type { SectorAllocation } from '@/types/portfolio'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
-const props = defineProps<{ sectors: SectorAllocation[] }>()
+const props = defineProps<{ sectors: SectorAllocation[]; title?: string }>()
 const f = useFormatters()
 
 const sortedSectors = computed(() =>

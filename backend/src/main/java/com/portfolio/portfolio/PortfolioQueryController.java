@@ -49,13 +49,7 @@ public class PortfolioQueryController {
         List<String> tickerCodes = snapshot.getHoldings().stream()
             .map(Holding::getTickerCode).toList();
 
-        Optional<Snapshot> previous = snapshotService.findLatestBefore(snapshot.getSnapshotDate());
-        SnapshotDiff diff = analysisService.calculateDiff(snapshot, previous);
-
-        // Include removed tickers to ensure company names are available for the diff view
-        Set<String> allTickers = new HashSet<>(tickerCodes);
-        diff.removedHoldings().forEach(h -> allTickers.add(h.getTickerCode()));
-        Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(List.copyOf(allTickers))
+        Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(tickerCodes)
             .stream().collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
 
         Map<String, String> memoMap = stockMemoRepository.findAllByTickerCodeIn(tickerCodes)
@@ -65,12 +59,11 @@ public class PortfolioQueryController {
             List.copyOf(metaMap.values()));
         List<SectorAllocation> sectors = analysisService.analyzeSectorAllocation(enriched);
 
-        return ResponseEntity.ok(toResponse(snapshot, enriched, sectors, diff, metaMap, memoMap));
+        return ResponseEntity.ok(toResponse(snapshot, enriched, sectors, memoMap));
     }
 
     private PortfolioResponse toResponse(Snapshot snapshot, List<EnrichedHolding> enriched,
-                                          List<SectorAllocation> sectors, SnapshotDiff diff,
-                                          Map<String, StockMeta> metaMap, Map<String, String> memoMap) {
+                                          List<SectorAllocation> sectors, Map<String, String> memoMap) {
         SnapshotSummaryDto summaryDto = new SnapshotSummaryDto(
             snapshot.getSnapshotDate().toString(),
             snapshot.getTotalValuation().toPlainString(),
@@ -106,30 +99,6 @@ public class PortfolioQueryController {
                 sa.allocationPct().toPlainString(), sa.holdingCount())
         ).toList();
 
-        SnapshotDiffDto diffDto = new SnapshotDiffDto(
-            diff.addedHoldings().stream().map(h -> {
-                StockMeta m = metaMap.get(h.getTickerCode());
-                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
-            }).toList(),
-            diff.removedHoldings().stream().map(h -> {
-                StockMeta m = metaMap.get(h.getTickerCode());
-                return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
-            }).toList(),
-            diff.changedHoldings().stream().map(c -> {
-                StockMeta m = metaMap.get(c.tickerCode());
-                return new HoldingChangeDto(
-                    c.tickerCode(),
-                    m != null ? m.getCompanyName() : null,
-                    c.previous().getTotalQuantity().toPlainString(),
-                    c.current().getTotalQuantity().toPlainString(),
-                    c.quantityDiff().toPlainString(),
-                    c.valuationDiff().toPlainString()
-                );
-            }).toList(),
-            diff.valuationChange().toPlainString(),
-            diff.profitLossChange().toPlainString()
-        );
-
-        return new PortfolioResponse(summaryDto, holdingDtos, sectorDtos, diffDto);
+        return new PortfolioResponse(summaryDto, holdingDtos, sectorDtos);
     }
 }

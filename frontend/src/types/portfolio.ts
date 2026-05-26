@@ -38,26 +38,21 @@ export interface TickerSummary {
   companyName: string | null
 }
 
-export interface HoldingChange {
-  tickerCode: string
-  companyName: string | null
-  quantityBefore: string
-  quantityAfter: string
-  quantityDiff: string
-  valuationDiff: string
-}
-
 export interface SnapshotDiff {
   addedTickers: TickerSummary[]
   removedTickers: TickerSummary[]
-  changed: HoldingChange[]
-  valuationChange: string
-  profitLossChange: string
+}
+
+export interface SnapshotListItem {
+  snapshotDate: string
+  totalValuation: string
+  totalProfitLoss: string
+  totalProfitLossPct: string
+  holdingCount: number
 }
 
 export interface PortfolioResponse {
   snapshot: SnapshotSummary
   holdings: EnrichedHolding[]
   sectors: SectorAllocation[]
-  diff: SnapshotDiff
 }

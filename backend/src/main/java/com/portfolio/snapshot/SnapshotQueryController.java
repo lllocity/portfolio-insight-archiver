@@ -1,10 +1,12 @@
 package com.portfolio.snapshot;
 
 import com.portfolio.analysis.PortfolioAnalysisService;
+import com.portfolio.analysis.dto.EnrichedHolding;
+import com.portfolio.analysis.dto.SectorAllocation;
 import com.portfolio.analysis.dto.SnapshotDiff;
 import com.portfolio.jquants.StockMetaCacheRepository;
 import com.portfolio.jquants.model.StockMeta;
-import com.portfolio.portfolio.dto.PortfolioResponse.HoldingChangeDto;
+import com.portfolio.portfolio.dto.PortfolioResponse.SectorAllocationDto;
 import com.portfolio.portfolio.dto.PortfolioResponse.SnapshotDiffDto;
 import com.portfolio.portfolio.dto.PortfolioResponse.TickerSummaryDto;
 import com.portfolio.snapshot.dto.SnapshotHoldingDto;
@@ -83,7 +85,30 @@ public class SnapshotQueryController {
         return ResponseEntity.ok(result);
     }
 
-    /** GET /api/snapshots/diff?from={date}&to={date} — 2スナップショット間の差分 */
+    /** GET /api/snapshots/{date}/sectors — 指定日のセクター別構成比 */
+    @GetMapping("/{date}/sectors")
+    public ResponseEntity<List<SectorAllocationDto>> getSectors(
+        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        Optional<Snapshot> snap = snapshotService.findByDate(date);
+        if (snap.isEmpty()) return ResponseEntity.notFound().build();
+
+        List<String> tickers = snap.get().getHoldings().stream()
+            .map(Holding::getTickerCode).toList();
+        Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(tickers)
+            .stream().collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
+
+        List<EnrichedHolding> enriched = analysisService.mergeWithMeta(
+            snap.get().getHoldings(), List.copyOf(metaMap.values()));
+        List<SectorAllocation> sectors = analysisService.analyzeSectorAllocation(enriched);
+
+        return ResponseEntity.ok(sectors.stream().map(sa ->
+            new SectorAllocationDto(sa.sector33Name(), sa.totalValuation().toPlainString(),
+                sa.allocationPct().toPlainString(), sa.holdingCount())
+        ).toList());
+    }
+
+    /** GET /api/snapshots/diff?from={date}&to={date} — 2スナップショット間の差分（追加・除去のみ）*/
     @GetMapping("/diff")
     public ResponseEntity<SnapshotDiffDto> getSnapshotDiff(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -98,11 +123,9 @@ public class SnapshotQueryController {
 
         SnapshotDiff diff = analysisService.calculateDiff(toSnap.get(), Optional.of(fromSnap.get()));
 
-        // Load meta for all relevant tickers (added, removed, changed)
         Set<String> allTickers = new HashSet<>();
         diff.addedHoldings().forEach(h -> allTickers.add(h.getTickerCode()));
         diff.removedHoldings().forEach(h -> allTickers.add(h.getTickerCode()));
-        diff.changedHoldings().forEach(c -> allTickers.add(c.tickerCode()));
         Map<String, StockMeta> metaMap = stockMetaCacheRepository.findAllByTickerCodeIn(List.copyOf(allTickers))
             .stream().collect(Collectors.toMap(StockMeta::getTickerCode, m -> m));
 
@@ -114,20 +137,7 @@ public class SnapshotQueryController {
             diff.removedHoldings().stream().map(h -> {
                 StockMeta m = metaMap.get(h.getTickerCode());
                 return new TickerSummaryDto(h.getTickerCode(), m != null ? m.getCompanyName() : null);
-            }).toList(),
-            diff.changedHoldings().stream().map(c -> {
-                StockMeta m = metaMap.get(c.tickerCode());
-                return new HoldingChangeDto(
-                    c.tickerCode(),
-                    m != null ? m.getCompanyName() : null,
-                    c.previous().getTotalQuantity().toPlainString(),
-                    c.current().getTotalQuantity().toPlainString(),
-                    c.quantityDiff().toPlainString(),
-                    c.valuationDiff().toPlainString()
-                );
-            }).toList(),
-            diff.valuationChange().toPlainString(),
-            diff.profitLossChange().toPlainString()
+            }).toList()
         );
 
         return ResponseEntity.ok(dto);

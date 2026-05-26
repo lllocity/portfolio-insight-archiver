@@ -83,7 +83,8 @@ class SnapshotQueryControllerTest {
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().valuationChange()).isEqualTo("200000");
+        assertThat(response.getBody().addedTickers()).isEmpty();
+        assertThat(response.getBody().removedTickers()).isEmpty();
     }
 
     private Snapshot snapshot(LocalDate date, String valuation) {
