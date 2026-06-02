@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { router } from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -14,6 +15,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     supabase.auth.onAuthStateChange((_event, session) => {
       user.value = session?.user ?? null
+      if (_event === 'SIGNED_OUT') {
+        router.push('/login')
+      }
     })
   }
 
