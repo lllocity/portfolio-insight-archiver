@@ -18,6 +18,6 @@ export async function fetchSnapshotHoldings(date: string): Promise<SnapshotHoldi
   const { data, error } = await supabase.functions.invoke('snapshot-holdings', {
     body: { date },
   })
-  if (error) throw error
+  if (error) throw new Error('保有銘柄の取得に失敗しました')
   return data ?? []
 }

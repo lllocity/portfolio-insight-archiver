@@ -3,7 +3,7 @@ import type { PortfolioResponse, SnapshotListItem, SectorAllocation, SnapshotDif
 
 export async function fetchLatestPortfolio(): Promise<PortfolioResponse | null> {
   const { data, error } = await supabase.functions.invoke('portfolio-latest')
-  if (error) throw error
+  if (error) throw new Error('ポートフォリオの取得に失敗しました')
   return data ?? null
 }
 
@@ -15,7 +15,7 @@ export async function fetchSnapshotDates(): Promise<SnapshotListItem[]> {
     .select('snapshot_date, total_valuation, total_profit_loss, total_profit_loss_pct, holding_count')
     .eq('user_id', user.id)
     .order('snapshot_date', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error('履歴の取得に失敗しました')
   return (data ?? []).map((s) => ({
     snapshotDate: s.snapshot_date,
     totalValuation: String(s.total_valuation),
@@ -29,7 +29,7 @@ export async function fetchSnapshotSectors(date: string): Promise<SectorAllocati
   const { data, error } = await supabase.functions.invoke('snapshot-sectors', {
     body: { date },
   })
-  if (error) throw error
+  if (error) throw new Error('セクター情報の取得に失敗しました')
   return data ?? []
 }
 
@@ -37,6 +37,6 @@ export async function fetchSnapshotDiff(from: string, to: string): Promise<Snaps
   const { data, error } = await supabase.functions.invoke('snapshot-diff', {
     body: { from, to },
   })
-  if (error) throw error
+  if (error) throw new Error('差分の取得に失敗しました')
   return data
 }

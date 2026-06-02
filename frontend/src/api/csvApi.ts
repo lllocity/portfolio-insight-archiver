@@ -8,14 +8,6 @@ export async function importCsv(file: File, snapshotDate?: string): Promise<Impo
   const { data, error } = await supabase.functions.invoke('csv-import', {
     body: formData,
   })
-  if (error) {
-    // Edge Function の実際のエラーメッセージを取り出す
-    const ctx = (error as { context?: Response }).context
-    if (ctx instanceof Response) {
-      const body = await ctx.json().catch(() => null)
-      if (body?.error) throw new Error(body.error)
-    }
-    throw error
-  }
+  if (error) throw new Error('CSVインポートに失敗しました。ファイルを確認して再試行してください。')
   return data as ImportResult
 }
