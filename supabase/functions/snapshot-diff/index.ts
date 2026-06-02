@@ -19,9 +19,7 @@ Deno.serve(async (req) => {
   if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401)
 
   try {
-    const url = new URL(req.url)
-    const from = url.searchParams.get('from')
-    const to = url.searchParams.get('to')
+    const { from, to } = await req.json()
     if (!from || !to) return jsonResponse({ error: 'from and to parameters required' }, 400)
 
     const [{ data: fromSnap }, { data: toSnap }] = await Promise.all([

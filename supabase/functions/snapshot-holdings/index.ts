@@ -19,8 +19,7 @@ Deno.serve(async (req) => {
   if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401)
 
   try {
-    const url = new URL(req.url)
-    const date = url.searchParams.get('date')
+    const { date } = await req.json()
     if (!date) return jsonResponse({ error: 'date parameter required' }, 400)
 
     const { data: snapshot } = await supabase
