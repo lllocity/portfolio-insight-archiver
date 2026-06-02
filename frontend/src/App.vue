@@ -67,7 +67,9 @@ const tabs = [
 
 onMounted(async () => {
   await authStore.init()
-  await portfolioStore.load()
-  if (portfolioStore.error) globalError.value = portfolioStore.error
+  if (authStore.user) {
+    await portfolioStore.load()
+    if (portfolioStore.error) globalError.value = portfolioStore.error
+  }
 })
 </script>
