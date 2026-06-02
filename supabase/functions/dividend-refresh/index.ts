@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { parse } from 'https://esm.sh/node-html-parser@6.1.13'
 import { handleCors, jsonResponse } from '../_shared/cors.ts'
 
-const DELAY_MS = 1500
+const DELAY_MS = 1000
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
 
 function sleep(ms: number) {
