@@ -23,6 +23,20 @@
           >
             {{ tab.label }}
           </RouterLink>
+
+          <!-- ログアウト -->
+          <div class="ml-auto flex items-center gap-2">
+            <span v-if="authStore.user" class="text-xs text-gray-400">
+              {{ authStore.user.email }}
+            </span>
+            <button
+              v-if="authStore.user"
+              @click="authStore.signOut"
+              class="rounded px-3 py-1.5 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+            >
+              ログアウト
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -39,8 +53,10 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import AppError from '@/components/AppError.vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const portfolioStore = usePortfolioStore()
+const authStore = useAuthStore()
 const globalError = ref<string | null>(null)
 
 const tabs = [
@@ -50,6 +66,7 @@ const tabs = [
 ]
 
 onMounted(async () => {
+  await authStore.init()
   await portfolioStore.load()
   if (portfolioStore.error) globalError.value = portfolioStore.error
 })
