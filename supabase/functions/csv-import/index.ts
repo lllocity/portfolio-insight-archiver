@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     if (holdingsError) throw holdingsError
 
     const tickerCodes = records.map((r) => r.tickerCode)
-    fetchAndCacheJQuantsMetadata(tickerCodes, supabase).catch((e) =>
+    await fetchAndCacheJQuantsMetadata(tickerCodes, supabase).catch((e) =>
       console.warn('J-Quants fetch failed:', e)
     )
 
