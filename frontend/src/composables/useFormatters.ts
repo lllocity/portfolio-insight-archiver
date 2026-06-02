@@ -33,5 +33,11 @@ export function useFormatters() {
     return value != null && value !== '' ? value : '―'
   }
 
-  return { formatCurrency, formatPct, colorClass, nullish }
+  /** "6,12" → "6月, 12月" */
+  function formatDividendMonths(value: string | null | undefined): string {
+    if (value == null || value === '') return '-'
+    return value.split(',').map((m) => `${m.trim()}月`).join(', ')
+  }
+
+  return { formatCurrency, formatPct, colorClass, nullish, formatDividendMonths }
 }

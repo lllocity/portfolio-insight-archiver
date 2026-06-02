@@ -83,7 +83,7 @@
             {{ f.formatPct(h.totalProfitLossPct) }}
           </td>
           <td class="px-3 py-2 text-right">{{ h.estimatedAnnualDividend ? f.formatCurrency(h.estimatedAnnualDividend) : '-' }}</td>
-          <td class="px-3 py-2 text-xs text-gray-500">{{ h.dividendMonths ?? '-' }}</td>
+          <td class="px-3 py-2 text-xs text-gray-500">{{ f.formatDividendMonths(h.dividendMonths) }}</td>
           <td class="w-48 px-3 py-2">
             <template v-if="editingTicker === h.tickerCode">
               <div class="flex flex-col gap-1">
