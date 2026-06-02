@@ -9,5 +9,9 @@ export async function importCsv(file: File, snapshotDate?: string): Promise<Impo
     body: formData,
   })
   if (error) throw new Error('CSVインポートに失敗しました。ファイルを確認して再試行してください。')
+
+  // 配当情報をバックグラウンドで取得（完了を待たない）
+  supabase.functions.invoke('dividend-refresh').catch(() => {})
+
   return data as ImportResult
 }
