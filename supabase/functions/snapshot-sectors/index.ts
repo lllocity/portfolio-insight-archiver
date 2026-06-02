@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const sectorMap = new Map<string, { valuation: number; count: number }>()
     for (const h of (holdings as any[]) ?? []) {
-      const sector = metaMap[h.ticker_code] ?? '不明'
+      const sector = metaMap[h.ticker_code] ?? (/^\d{3}[0-9A-Z]$/.test(h.ticker_code) ? '不明' : '投資信託')
       const val = parseFloat(h.total_valuation)
       const existing = sectorMap.get(sector) ?? { valuation: 0, count: 0 }
       sectorMap.set(sector, { valuation: existing.valuation + val, count: existing.count + 1 })

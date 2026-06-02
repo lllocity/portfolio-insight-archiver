@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       return {
         tickerCode: h.ticker_code,
         companyName: meta?.company_name ?? null,
-        sectorName: meta?.sector33_name ?? '不明',
+        sectorName: meta?.sector33_name ?? (/^\d{3}[0-9A-Z]$/.test(h.ticker_code) ? '不明' : '投資信託'),
         totalQuantity: String(h.total_quantity),
         weightedAvgPurchasePrice: String(h.weighted_avg_purchase_price),
         currentPrice: String(h.current_price),

@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     const enriched = ((holdings as any[]) ?? []).map((h) => {
       const meta = metaMap[h.ticker_code]
-      const sectorName = meta?.sector33_name ?? '不明'
+      const sectorName = meta?.sector33_name ?? (/^\d{3}[0-9A-Z]$/.test(h.ticker_code) ? '不明' : '投資信託')
       const val = parseFloat(h.total_valuation)
       sectorMap.set(sectorName, (sectorMap.get(sectorName) ?? 0) + val)
       totalValuation += val
