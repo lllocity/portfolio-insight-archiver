@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase'
+
 export interface SnapshotHolding {
   tickerCode: string
   companyName: string | null
@@ -13,7 +15,9 @@ export interface SnapshotHolding {
 }
 
 export async function fetchSnapshotHoldings(date: string): Promise<SnapshotHolding[]> {
-  const res = await fetch(`/api/snapshots/${date}/holdings`)
-  if (!res.ok) throw new Error('holdings fetch failed')
-  return res.json()
+  const { data, error } = await supabase.functions.invoke('snapshot-holdings', {
+    body: { date },
+  })
+  if (error) throw error
+  return data ?? []
 }

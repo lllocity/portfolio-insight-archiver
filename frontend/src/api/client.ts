@@ -1,21 +1,14 @@
-import axios from 'axios'
-import type { ApiError } from '@/types/api'
+import { supabase } from '@/lib/supabase'
 
-export const apiClient = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' }
-})
-
-// レスポンスエラーをApiError形式に正規化
-apiClient.interceptors.response.use(
-  response => response,
-  error => {
-    const apiError: ApiError = error.response?.data ?? {
-      status: 0,
-      error: 'Network Error',
-      message: 'サーバーに接続できません。バックエンドが起動しているか確認してください。',
-      path: ''
-    }
-    return Promise.reject(apiError)
-  }
-)
+// Supabase Edge Function を呼び出す共通ヘルパー
+export async function invokeFunction<T>(
+  name: string,
+  options?: { body?: FormData | object; method?: string; params?: Record<string, string> }
+): Promise<T> {
+  const { data, error } = await supabase.functions.invoke<T>(name, {
+    body: options?.body,
+    method: options?.method ?? 'GET',
+  })
+  if (error) throw error
+  return data as T
+}

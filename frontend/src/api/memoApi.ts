@@ -1,9 +1,22 @@
-import { apiClient } from './client'
+import { supabase } from '@/lib/supabase'
 
 export async function upsertMemo(tickerCode: string, content: string): Promise<void> {
-  await apiClient.put(`/memos/${tickerCode}`, { content })
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { error } = await supabase.from('stock_memo').upsert(
+    { user_id: user.id, ticker_code: tickerCode, content, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,ticker_code' }
+  )
+  if (error) throw error
 }
 
 export async function deleteMemo(tickerCode: string): Promise<void> {
-  await apiClient.delete(`/memos/${tickerCode}`)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { error } = await supabase
+    .from('stock_memo')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('ticker_code', tickerCode)
+  if (error) throw error
 }

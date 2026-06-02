@@ -1,0 +1,106 @@
+// deno-lint-ignore-file no-explicit-any
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { handleCors, jsonResponse } from '../_shared/cors.ts'
+
+Deno.serve(async (req) => {
+  const corsRes = handleCors(req)
+  if (corsRes) return corsRes
+
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401)
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } },
+  )
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401)
+
+  try {
+    const { data: snapshot } = await supabase
+      .from('snapshots')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!snapshot) {
+      return new Response(null, {
+        status: 204,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      })
+    }
+
+    const { data: holdings } = await supabase
+      .from('holdings')
+      .select('*')
+      .eq('snapshot_id', (snapshot as any).id)
+
+    const tickerCodes = ((holdings as any[]) ?? []).map((h) => h.ticker_code)
+
+    const [{ data: metaList }, { data: memoList }] = await Promise.all([
+      supabase.from('stock_meta_cache').select('*').in('ticker_code', tickerCodes),
+      supabase.from('stock_memo').select('*').eq('user_id', user.id).in('ticker_code', tickerCodes),
+    ])
+
+    const metaMap = Object.fromEntries(((metaList as any[]) ?? []).map((m) => [m.ticker_code, m]))
+    const memoMap = Object.fromEntries(((memoList as any[]) ?? []).map((m) => [m.ticker_code, m.content]))
+
+    const enriched = ((holdings as any[]) ?? []).map((h) => {
+      const meta = metaMap[h.ticker_code]
+      const annualDividend = meta?.annual_dividend_per_share != null
+        ? parseFloat(meta.annual_dividend_per_share) * parseFloat(h.total_quantity)
+        : null
+      return {
+        tickerCode: h.ticker_code,
+        companyName: meta?.company_name ?? null,
+        sectorName: meta?.sector33_name ?? '不明',
+        totalQuantity: String(h.total_quantity),
+        weightedAvgPurchasePrice: String(h.weighted_avg_purchase_price),
+        currentPrice: String(h.current_price),
+        dailyChange: String(h.daily_change),
+        dailyChangePct: String(h.daily_change_pct),
+        totalProfitLoss: String(h.total_profit_loss),
+        totalProfitLossPct: String(h.total_profit_loss_pct),
+        totalValuation: String(h.total_valuation),
+        memo: memoMap[h.ticker_code] ?? null,
+        estimatedAnnualDividend: annualDividend != null ? String(annualDividend) : null,
+        dividendMonths: meta?.dividend_months ?? null,
+      }
+    })
+
+    const sectorMap = new Map<string, { valuation: number; count: number }>()
+    for (const h of enriched) {
+      const val = parseFloat(h.totalValuation)
+      const existing = sectorMap.get(h.sectorName) ?? { valuation: 0, count: 0 }
+      sectorMap.set(h.sectorName, { valuation: existing.valuation + val, count: existing.count + 1 })
+    }
+    const totalVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
+    const sectors = Array.from(sectorMap.entries())
+      .map(([name, { valuation, count }]) => ({
+        sector33Name: name,
+        totalValuation: String(Math.round(valuation)),
+        allocationPct: totalVal > 0 ? (valuation / totalVal * 100).toFixed(2) : '0',
+        holdingCount: count,
+      }))
+      .sort((a, b) => parseFloat(b.totalValuation) - parseFloat(a.totalValuation))
+
+    return jsonResponse({
+      snapshot: {
+        snapshotDate: (snapshot as any).snapshot_date,
+        totalValuation: String((snapshot as any).total_valuation),
+        totalProfitLoss: String((snapshot as any).total_profit_loss),
+        totalProfitLossPct: String((snapshot as any).total_profit_loss_pct),
+        holdingCount: (snapshot as any).holding_count,
+      },
+      holdings: enriched,
+      sectors,
+    })
+  } catch (e) {
+    console.error('portfolio-latest error:', e)
+    return jsonResponse({ error: String(e) }, 500)
+  }
+})
