@@ -24,61 +24,71 @@ SBI証券の保有銘柄一覧CSVをインポートし、履歴管理・差分�
 
 ## 技術スタック
 
-| レイヤー | 技術 | バージョン |
-|---|---|---|
-| フロントエンド | Vue / TypeScript / Vite / TailwindCSS | Vue 3.5.8 / TS 5.5.4 / Vite 5.4.6 |
-| バックエンド | Spring Boot / Java | Spring Boot 3.3.5 / Java 21 |
-| データベース | SQLite | 3.47.1.0 |
-| コンテナ | Docker / Docker Compose | - |
-| フロントエンドサーバー | nginx | 1.25-Alpine |
-| Node.js | - | 20 (Alpine) |
+| レイヤー | 技術 |
+|---|---|
+| フロントエンド | Vue 3 (Composition API) / TypeScript / Vite / TailwindCSS / Pinia / Vue Router |
+| バックエンド/BaaS | Supabase (PostgreSQL / Auth / Edge Functions) |
+| 認証 | Supabase Auth (Google OAuth) |
+| デプロイ (FE) | Vercel |
+| デプロイ (Edge Functions) | Supabase |
 
-## 起動手順
+## セットアップ
 
 ### 1. 環境変数の設定
 
 ```bash
-cp .env.example .env
+cp frontend/.env.local.example frontend/.env.local
 ```
 
-`.env` を開き、必要な値を設定します（[環境変数一覧](#環境変数)参照）。
+`frontend/.env.local` を開き、Supabase プロジェクトの値を設定します。
 
-### 2. 起動（バックグラウンド）
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+値は [Supabase ダッシュボード](https://supabase.com/dashboard) > Project Settings > API で確認できます。
+
+### 2. 依存パッケージのインストール
 
 ```bash
-docker compose up --build -d
+cd frontend && npm install
 ```
 
-| サービス | URL |
+### 3. 開発サーバー起動
+
+```bash
+npm run dev
+```
+
+`http://localhost:5173` でアプリが起動します。Google アカウントでログインして使用できます。
+
+## Edge Functions 一覧
+
+| Function | 説明 |
 |---|---|
-| フロントエンド | http://localhost:5173 |
-| バックエンドAPI | http://localhost:8080 |
-
-### 3. ログ確認
-
-```bash
-docker compose logs -f
-```
-
-### 4. 停止
+| `csv-import` | SBI証券CSVのパース・スナップショット保存 |
+| `portfolio-latest` | 最新スナップショットの保有状況・セクター集計 |
+| `snapshot-holdings` | 特定日付のスナップショット保有一覧 |
+| `snapshot-sectors` | 特定日付のセクター集計 |
+| `snapshot-diff` | 2スナップショット間の差分 |
+| `prompt-latest` | AIプロンプト生成 |
+| `dividend-refresh` | 配当情報のスクレイピング更新 |
 
 ```bash
-docker compose down
+# Edge Functions のローカル実行
+npx supabase functions serve
 ```
 
----
+## 開発コマンド
 
-## 環境変数
+```bash
+cd frontend
 
-| 変数 | 説明 | デフォルト | 必須 |
-|---|---|---|---|
-| `JQUANTS_API_KEY` | J-Quantsのマイページから取得。未設定時は企業名・セクター取得なしで動作 | なし | 任意 |
-| `LOG_LEVEL` | `INFO` / `DEBUG` / `WARN` | `INFO` | 任意 |
-| `DB_PATH` | SQLiteデータベースのパス | `/data/portfolio.db` | 任意 |
-| `CSV_ALLOWED_DIR` | CSVアップロードの許可ディレクトリ | `/data` | 任意 |
-| `VITE_API_BASE_URL` | フロントエンドからバックエンドへのURL | `http://localhost:8080` | 任意 |
-
-> 同一WiFiの別端末からアクセスする場合は `VITE_API_BASE_URL` の設定が必要です。詳細は[別端末からのアクセス](#別端末からのアクセス)を参照してください。
+npm run dev          # 開発サーバー起動
+npm run build        # Vercel デプロイ用ビルド（型チェック含む）
+npm run test         # ユニットテスト（Vitest）
+```
 
 ---
 
@@ -96,55 +106,3 @@ SBI証券の「保有銘柄一覧」CSVに対応しています。
 | ファンド名 | `ニッセイ日経平均インデックス` | 投資信託（そのままコードとして保存） |
 
 同一銘柄が複数セクションに分かれている場合は自動的に集計します（加重平均取得単価）。
-
----
-
-## 開発・テスト
-
-```bash
-# バックエンド テスト
-cd backend
-./gradlew test
-
-# フロントエンド テスト
-cd frontend
-npm run test
-```
-
----
-
-## 別端末からのアクセス
-
-同一WiFiネットワーク上の別端末（スマートフォン・タブレット等）からアクセスする手順です。
-
-### 1. ホストマシンのIPアドレスを確認
-
-```bash
-ipconfig getifaddr en0
-```
-
-例: `192.168.1.10`
-
-### 2. .env を更新
-
-```env
-VITE_API_BASE_URL=http://192.168.1.10:8080
-```
-
-### 3. 再ビルドして起動
-
-```bash
-docker compose up --build -d
-```
-
-### 4. 別端末からアクセス
-
-ブラウザで `http://192.168.1.10:5173` を開きます。
-
-> **注意**: 自宅・社内LANなど信頼できるネットワーク内でのみ使用してください。
-
----
-
-## データの永続化
-
-`./data/` ディレクトリにSQLiteデータベースが保存されます。コンテナを削除してもデータは残ります。

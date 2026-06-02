@@ -1,4 +1,4 @@
-// POST /api/csv/import のレスポンス型
+// csv-import Edge Function のレスポンス型
 export interface ImportResult {
   success: boolean
   snapshotDate: string

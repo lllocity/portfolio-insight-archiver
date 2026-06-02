@@ -1,5 +1,4 @@
-// GET /api/portfolio/latest のレスポンス型
-// バックエンドの PortfolioResponse に対応
+// portfolio-latest / snapshot-* Edge Functions のレスポンス型
 
 export interface SnapshotSummary {
   snapshotDate: string

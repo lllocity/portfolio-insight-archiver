@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
-    "axios": "^1.7.7",
     "chart.js": "^4.4.4",
     "pinia": "^2.2.2",
     "vue": "^3.5.8",
