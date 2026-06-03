@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
     const memoMap = Object.fromEntries(((memoList as any[]) ?? []).map((m) => [m.ticker_code, m.content]))
     const prevMap = Object.fromEntries(((prevHoldings as any[]) ?? []).map((h) => [h.ticker_code, h]))
 
+    const cashBalance = latest.cash_balance ?? 0
+
     // Sector aggregation
     const sectorMap = new Map<string, number>()
     let totalValuation = 0
@@ -80,6 +82,8 @@ Deno.serve(async (req) => {
       return { h, meta, sectorName, annualDiv }
     })
 
+    const totalAssets = totalValuation + cashBalance
+
     // Build prompt
     let sb = '# ポートフォリオ分析依頼\n\n'
 
@@ -87,12 +91,16 @@ Deno.serve(async (req) => {
     sb += '## 1. ポートフォリオ概要\n\n'
     sb += '| 項目 | 値 |\n|---|---|\n'
     sb += `| スナップショット日 | ${latest.snapshot_date} |\n`
-    sb += `| 総評価額 | ¥${JPY.format(latest.total_valuation)} |\n`
+    sb += `| 株式評価額 | ¥${JPY.format(latest.total_valuation)} |\n`
+    if (cashBalance > 0) {
+      sb += `| 待機資金（現金） | ¥${JPY.format(cashBalance)} |\n`
+      sb += `| 総資産 | ¥${JPY.format(latest.total_valuation + cashBalance)} |\n`
+    }
     sb += `| 総損益 | ${fmtPl(latest.total_profit_loss)}（${fmtPct(parseFloat(latest.total_profit_loss_pct))}） |\n`
     sb += `| 保有銘柄数 | ${latest.holding_count}銘柄 |\n`
     sb += `| セクター数 | ${sectorMap.size}業種 |\n`
     if (totalDividend > 0) {
-      const yld = (totalDividend / totalValuation * 100).toFixed(2)
+      const yld = (totalDividend / totalAssets * 100).toFixed(2)
       sb += `| 年間配当合計（予想） | ¥${JPY.format(Math.round(totalDividend))} |\n`
       sb += `| 配当利回り（予想） | ${yld}% |\n`
     }
@@ -116,8 +124,12 @@ Deno.serve(async (req) => {
     sb += '| セクター | 構成比(%) | 評価額(円) |\n|---|---|---|\n'
     const sortedSectors = Array.from(sectorMap.entries()).sort((a, b) => b[1] - a[1])
     for (const [name, val] of sortedSectors) {
-      const pct = totalValuation > 0 ? (val / totalValuation * 100).toFixed(2) : '0'
+      const pct = totalAssets > 0 ? (val / totalAssets * 100).toFixed(2) : '0'
       sb += `| ${name} | ${pct} | ${JPY.format(Math.round(val))} |\n`
+    }
+    if (cashBalance > 0) {
+      const cashPct = totalAssets > 0 ? (cashBalance / totalAssets * 100).toFixed(2) : '0'
+      sb += `| 現金 | ${cashPct} | ${JPY.format(cashBalance)} |\n`
     }
     sb += '\n'
 

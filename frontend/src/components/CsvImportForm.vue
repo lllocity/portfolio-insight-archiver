@@ -38,6 +38,19 @@
         data-testid="csv-import-date-input"
       />
     </div>
+    <div class="mt-2 flex items-center gap-2">
+      <label class="text-sm text-gray-600 whitespace-nowrap">買付余力（待機資金）:</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        class="w-36 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+        v-model.number="cashBalance"
+        placeholder="0"
+        data-testid="csv-import-cash-input"
+      />
+      <span class="text-sm text-gray-500">円</span>
+    </div>
 
     <!-- バリデーションエラー -->
     <p v-if="validationError" class="mt-1 text-xs text-red-600" data-testid="csv-import-validation-error">
@@ -57,8 +70,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { importCsv } from '@/api/csvApi'
+import { supabase } from '@/lib/supabase'
 import type { ImportResult } from '@/types/import'
 
 const emit = defineEmits<{ imported: [] }>()
@@ -67,9 +81,22 @@ const today = new Date().toISOString().slice(0, 10)
 
 const selectedFile = ref<File | null>(null)
 const snapshotDate = ref(today)
+const cashBalance = ref<number>(0)
 const loading = ref(false)
 const result = ref<ImportResult | null>(null)
 const validationError = ref('')
+
+onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('user_id', user.id)
+    .eq('key', 'cash_balance')
+    .maybeSingle()
+  if (data?.value) cashBalance.value = parseInt(data.value, 10)
+})
 
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -87,7 +114,7 @@ async function handleImport() {
   loading.value = true
   result.value = null
   try {
-    result.value = await importCsv(selectedFile.value, snapshotDate.value)
+    result.value = await importCsv(selectedFile.value, snapshotDate.value, cashBalance.value)
     emit('imported')
   } catch (e: unknown) {
     validationError.value = (e as { message?: string })?.message ?? 'インポートに失敗しました'

@@ -28,9 +28,14 @@
 
     <template v-else>
       <!-- サマリーカード -->
-      <div class="mb-6 grid gap-4 sm:grid-cols-4">
+      <div class="mb-6 grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
         <SummaryCard
-          label="総評価額"
+          label="総資産"
+          :value="f.formatCurrency(totalAssets)"
+          :sub-value="store.data.snapshot.cashBalance !== '0' ? `うち待機資金 ${f.formatCurrency(store.data.snapshot.cashBalance)}` : undefined"
+        />
+        <SummaryCard
+          label="株式評価額"
           :value="f.formatCurrency(store.data.snapshot.totalValuation)"
         />
         <SummaryCard
@@ -78,6 +83,13 @@ import HoldingsTable from '@/components/HoldingsTable.vue'
 const store = usePortfolioStore()
 const f = useFormatters()
 
+const totalAssets = computed<string>(() => {
+  if (!store.data) return '0'
+  const valuation = parseFloat(store.data.snapshot.totalValuation)
+  const cash = parseFloat(store.data.snapshot.cashBalance)
+  return String(valuation + cash)
+})
+
 const totalAnnualDividend = computed<string | null>(() => {
   if (!store.data) return null
   const total = store.data.holdings
@@ -88,9 +100,9 @@ const totalAnnualDividend = computed<string | null>(() => {
 
 const dividendYield = computed<string | null>(() => {
   if (!store.data || totalAnnualDividend.value === null) return null
-  const valuation = parseFloat(store.data.snapshot.totalValuation)
-  if (valuation === 0) return null
-  const pct = (parseFloat(totalAnnualDividend.value) / valuation * 100).toFixed(2)
+  const assets = parseFloat(totalAssets.value)
+  if (assets === 0) return null
+  const pct = (parseFloat(totalAnnualDividend.value) / assets * 100).toFixed(2)
   return `配当利回り ${pct}%`
 })
 

@@ -31,6 +31,9 @@ Deno.serve(async (req) => {
     const text = new TextDecoder('shift-jis').decode(buffer)
     const records = parseCsv(text)
 
+    const cashBalanceStr = formData.get('cashBalance') as string | null
+    const cashBalance = cashBalanceStr ? Math.round(parseFloat(cashBalanceStr)) : 0
+
     const snapshotDate = snapshotDateStr ??
       new Date().toLocaleString('sv', { timeZone: 'Asia/Tokyo' }).slice(0, 10)
 
@@ -51,6 +54,7 @@ Deno.serve(async (req) => {
           total_profit_loss: Math.round(totalProfitLoss),
           total_profit_loss_pct: totalProfitLossPct,
           holding_count: records.length,
+          cash_balance: cashBalance,
         },
         { onConflict: 'user_id,snapshot_date' },
       )
@@ -77,6 +81,11 @@ Deno.serve(async (req) => {
       })),
     )
     if (holdingsError) throw holdingsError
+
+    await supabase.from('settings').upsert(
+      { user_id: user.id, key: 'cash_balance', value: String(cashBalance) },
+      { onConflict: 'user_id,key' },
+    )
 
     const tickerCodes = records.map((r) => r.tickerCode)
     await fetchAndCacheJQuantsMetadata(tickerCodes, supabase).catch((e) =>

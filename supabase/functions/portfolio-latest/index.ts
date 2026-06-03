@@ -72,26 +72,38 @@ Deno.serve(async (req) => {
       }
     })
 
+    const cashBalance = (snapshot as any).cash_balance ?? 0
+
     const sectorMap = new Map<string, { valuation: number; count: number }>()
     for (const h of enriched) {
       const val = parseFloat(h.totalValuation)
       const existing = sectorMap.get(h.sectorName) ?? { valuation: 0, count: 0 }
       sectorMap.set(h.sectorName, { valuation: existing.valuation + val, count: existing.count + 1 })
     }
-    const totalVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
+    const totalStockVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
+    const totalAssets = totalStockVal + cashBalance
     const sectors = Array.from(sectorMap.entries())
       .map(([name, { valuation, count }]) => ({
         sector33Name: name,
         totalValuation: String(Math.round(valuation)),
-        allocationPct: totalVal > 0 ? (valuation / totalVal * 100).toFixed(2) : '0',
+        allocationPct: totalAssets > 0 ? (valuation / totalAssets * 100).toFixed(2) : '0',
         holdingCount: count,
       }))
       .sort((a, b) => parseFloat(b.totalValuation) - parseFloat(a.totalValuation))
+    if (cashBalance > 0) {
+      sectors.push({
+        sector33Name: '現金',
+        totalValuation: String(cashBalance),
+        allocationPct: totalAssets > 0 ? (cashBalance / totalAssets * 100).toFixed(2) : '0',
+        holdingCount: 0,
+      })
+    }
 
     return jsonResponse({
       snapshot: {
         snapshotDate: (snapshot as any).snapshot_date,
         totalValuation: String((snapshot as any).total_valuation),
+        cashBalance: String(cashBalance),
         totalProfitLoss: String((snapshot as any).total_profit_loss),
         totalProfitLossPct: String((snapshot as any).total_profit_loss_pct),
         holdingCount: (snapshot as any).holding_count,

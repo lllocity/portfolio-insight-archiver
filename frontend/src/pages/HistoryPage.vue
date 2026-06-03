@@ -24,7 +24,8 @@
           <thead class="bg-gray-50 text-xs text-gray-500">
             <tr>
               <th scope="col" class="px-3 py-2 text-left font-medium">日付</th>
-              <th scope="col" class="px-3 py-2 text-right font-medium">総評価額</th>
+              <th scope="col" class="px-3 py-2 text-right font-medium">総資産</th>
+              <th scope="col" class="px-3 py-2 text-right font-medium">株式評価額</th>
               <th scope="col" class="px-3 py-2 text-right font-medium">損益</th>
               <th scope="col" class="px-3 py-2 text-right font-medium">損益率</th>
               <th scope="col" class="px-3 py-2 text-right font-medium">銘柄数</th>
@@ -42,7 +43,8 @@
                   <span class="mr-1 text-xs text-gray-400">{{ expandedDate === s.snapshotDate ? '▲' : '▼' }}</span>
                   {{ s.snapshotDate }}
                 </td>
-                <td class="px-3 py-2 text-right">{{ f.formatCurrency(s.totalValuation) }}</td>
+                <td class="px-3 py-2 text-right">{{ f.formatCurrency(String(parseFloat(s.totalValuation) + parseFloat(s.cashBalance))) }}</td>
+                <td class="px-3 py-2 text-right text-gray-500">{{ f.formatCurrency(s.totalValuation) }}</td>
                 <td class="px-3 py-2 text-right" :class="f.colorClass(s.totalProfitLoss)">
                   {{ f.formatCurrency(s.totalProfitLoss) }}
                 </td>
@@ -54,7 +56,7 @@
 
               <!-- アコーディオン: 保有銘柄 -->
               <tr v-if="expandedDate === s.snapshotDate">
-                <td colspan="5" class="bg-gray-50 p-0">
+                <td colspan="6" class="bg-gray-50 p-0">
                   <div class="px-4 py-3">
                     <div v-if="holdingsLoading[s.snapshotDate]" class="py-2 text-center text-xs text-gray-500">
                       読み込み中...

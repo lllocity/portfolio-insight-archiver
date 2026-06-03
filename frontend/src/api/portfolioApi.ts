@@ -12,13 +12,14 @@ export async function fetchSnapshotDates(): Promise<SnapshotListItem[]> {
   if (!user) throw new Error('Unauthorized')
   const { data, error } = await supabase
     .from('snapshots')
-    .select('snapshot_date, total_valuation, total_profit_loss, total_profit_loss_pct, holding_count')
+    .select('snapshot_date, total_valuation, cash_balance, total_profit_loss, total_profit_loss_pct, holding_count')
     .eq('user_id', user.id)
     .order('snapshot_date', { ascending: false })
   if (error) throw new Error('履歴の取得に失敗しました')
   return (data ?? []).map((s) => ({
     snapshotDate: s.snapshot_date,
     totalValuation: String(s.total_valuation),
+    cashBalance: String(s.cash_balance ?? 0),
     totalProfitLoss: String(s.total_profit_loss),
     totalProfitLossPct: String(s.total_profit_loss_pct),
     holdingCount: s.holding_count,

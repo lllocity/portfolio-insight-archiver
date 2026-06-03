@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     const { data: snapshot } = await supabase
       .from('snapshots')
-      .select('id')
+      .select('id, cash_balance')
       .eq('user_id', user.id)
       .eq('snapshot_date', date)
       .maybeSingle()
@@ -54,15 +54,25 @@ Deno.serve(async (req) => {
       sectorMap.set(sector, { valuation: existing.valuation + val, count: existing.count + 1 })
     }
 
-    const totalVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
+    const cashBalance = (snapshot as any).cash_balance ?? 0
+    const totalStockVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
+    const totalAssets = totalStockVal + cashBalance
     const sectors = Array.from(sectorMap.entries())
       .map(([name, { valuation, count }]) => ({
         sector33Name: name,
         totalValuation: String(Math.round(valuation)),
-        allocationPct: totalVal > 0 ? (valuation / totalVal * 100).toFixed(2) : '0',
+        allocationPct: totalAssets > 0 ? (valuation / totalAssets * 100).toFixed(2) : '0',
         holdingCount: count,
       }))
       .sort((a, b) => parseFloat(b.totalValuation) - parseFloat(a.totalValuation))
+    if (cashBalance > 0) {
+      sectors.push({
+        sector33Name: '現金',
+        totalValuation: String(cashBalance),
+        allocationPct: totalAssets > 0 ? (cashBalance / totalAssets * 100).toFixed(2) : '0',
+        holdingCount: 0,
+      })
+    }
 
     return jsonResponse(sectors)
   } catch (e) {

@@ -6,17 +6,20 @@
     <!-- ナビゲーション（ログイン画面では非表示） -->
     <nav v-if="$route.path !== '/login'" class="border-b border-gray-200 bg-white shadow-sm">
       <div class="mx-auto max-w-7xl px-4">
+        <!-- 上段: ロゴ + デスクトップタブ + ログアウト -->
         <div class="flex h-12 items-center gap-1">
           <div class="mr-4 flex items-center gap-2">
             <img :src="'/logo.png'" alt="マイポートフォリオ帳" class="h-7 w-7 rounded" />
             <span class="text-sm font-bold text-gray-800">マイポートフォリオ帳</span>
           </div>
+
+          <!-- タブ（sm以上で上段表示） -->
           <RouterLink
             v-for="tab in tabs"
             :key="tab.path"
             :to="tab.path"
             :data-testid="`nav-${tab.key}`"
-            class="rounded px-3 py-1.5 text-sm font-medium transition-colors"
+            class="hidden rounded px-3 py-1.5 text-sm font-medium transition-colors sm:block"
             :class="$route.path === tab.path
               ? 'bg-blue-50 text-blue-700'
               : 'text-gray-600 hover:bg-gray-100'"
@@ -26,7 +29,7 @@
 
           <!-- ログアウト -->
           <div class="ml-auto flex items-center gap-2">
-            <span v-if="authStore.user" class="text-xs text-gray-400">
+            <span v-if="authStore.user" class="hidden text-xs text-gray-400 md:block">
               {{ authStore.user.email }}
             </span>
             <button
@@ -37,6 +40,22 @@
               ログアウト
             </button>
           </div>
+        </div>
+
+        <!-- 下段タブ（モバイルのみ） -->
+        <div class="flex border-t border-gray-100 sm:hidden">
+          <RouterLink
+            v-for="tab in tabs"
+            :key="tab.path"
+            :to="tab.path"
+            :data-testid="`nav-mobile-${tab.key}`"
+            class="flex-1 py-2 text-center text-sm font-medium transition-colors"
+            :class="$route.path === tab.path
+              ? 'border-b-2 border-blue-600 text-blue-700'
+              : 'text-gray-500 hover:text-gray-700'"
+          >
+            {{ tab.label }}
+          </RouterLink>
         </div>
       </div>
     </nav>

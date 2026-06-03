@@ -3,6 +3,7 @@
 export interface SnapshotSummary {
   snapshotDate: string
   totalValuation: string
+  cashBalance: string
   totalProfitLoss: string
   totalProfitLossPct: string
   holdingCount: number
@@ -46,6 +47,7 @@ export interface SnapshotDiff {
 export interface SnapshotListItem {
   snapshotDate: string
   totalValuation: string
+  cashBalance: string
   totalProfitLoss: string
   totalProfitLossPct: string
   holdingCount: number
