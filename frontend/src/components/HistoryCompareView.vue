@@ -39,9 +39,9 @@
       </div>
 
       <!-- 売買銘柄 -->
-      <div v-if="diff && (diff.addedTickers.length > 0 || diff.removedTickers.length > 0)" class="mt-4 space-y-2">
+      <div v-if="diff && (diff.addedTickers.length > 0 || diff.removedTickers.length > 0 || diff.changedTickers.length > 0)" class="mt-4 space-y-2">
         <div v-if="diff.addedTickers.length > 0">
-          <p class="mb-1 text-xs font-medium text-gray-500">買い足した銘柄</p>
+          <p class="mb-1 text-xs font-medium text-gray-500">新規購入</p>
           <div class="flex flex-wrap gap-1">
             <span
               v-for="t in diff.addedTickers"
@@ -52,8 +52,32 @@
             </span>
           </div>
         </div>
+        <div v-if="diff.changedTickers.filter(t => t.quantityDiff > 0).length > 0">
+          <p class="mb-1 text-xs font-medium text-gray-500">買い足し</p>
+          <div class="flex flex-wrap gap-1">
+            <span
+              v-for="t in diff.changedTickers.filter(t => t.quantityDiff > 0)"
+              :key="t.tickerCode"
+              class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
+            >
+              +{{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> +{{ t.quantityDiff }}株 (計{{ t.toQuantity }}株)
+            </span>
+          </div>
+        </div>
+        <div v-if="diff.changedTickers.filter(t => t.quantityDiff < 0).length > 0">
+          <p class="mb-1 text-xs font-medium text-gray-500">一部売却</p>
+          <div class="flex flex-wrap gap-1">
+            <span
+              v-for="t in diff.changedTickers.filter(t => t.quantityDiff < 0)"
+              :key="t.tickerCode"
+              class="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700"
+            >
+              {{ t.tickerCode }}<template v-if="t.companyName"> {{ t.companyName }}</template> {{ t.quantityDiff }}株 (計{{ t.toQuantity }}株)
+            </span>
+          </div>
+        </div>
         <div v-if="diff.removedTickers.length > 0">
-          <p class="mb-1 text-xs font-medium text-gray-500">売却した銘柄</p>
+          <p class="mb-1 text-xs font-medium text-gray-500">全売却</p>
           <div class="flex flex-wrap gap-1">
             <span
               v-for="t in diff.removedTickers"

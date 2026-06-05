@@ -39,7 +39,10 @@ Deno.serve(async (req) => {
 
     const added = Object.keys(toMap).filter((c) => !fromMap[c])
     const removed = Object.keys(fromMap).filter((c) => !toMap[c])
-    const allTickers = [...new Set([...added, ...removed])]
+    const changed = Object.keys(toMap).filter(
+      (c) => fromMap[c] !== undefined && Number(toMap[c]) !== Number(fromMap[c])
+    )
+    const allTickers = [...new Set([...added, ...removed, ...changed])]
 
     const { data: metaList } = await supabase
       .from('stock_meta_cache')
@@ -58,6 +61,13 @@ Deno.serve(async (req) => {
         tickerCode: c,
         companyName: metaMap[c] ?? null,
         totalQuantity: String(fromMap[c]),
+      })),
+      changedTickers: changed.map((c) => ({
+        tickerCode: c,
+        companyName: metaMap[c] ?? null,
+        fromQuantity: String(fromMap[c]),
+        toQuantity: String(toMap[c]),
+        quantityDiff: Number(toMap[c]) - Number(fromMap[c]),
       })),
     })
   } catch (e) {

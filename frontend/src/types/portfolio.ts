@@ -39,9 +39,18 @@ export interface TickerSummary {
   totalQuantity: string
 }
 
+export interface ChangedTickerSummary {
+  tickerCode: string
+  companyName: string | null
+  fromQuantity: string
+  toQuantity: string
+  quantityDiff: number
+}
+
 export interface SnapshotDiff {
   addedTickers: TickerSummary[]
   removedTickers: TickerSummary[]
+  changedTickers: ChangedTickerSummary[]
 }
 
 export interface SnapshotListItem {
