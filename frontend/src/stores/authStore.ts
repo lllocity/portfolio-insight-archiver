@@ -10,12 +10,14 @@ export const useAuthStore = defineStore('auth', () => {
   const isAllowed = ref(false)
 
   async function checkAllowlist(email: string): Promise<boolean> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('allowed_emails')
       .select('email')
       .eq('email', email)
-      .single()
-    return !error
+      .maybeSingle()
+    // クエリ自体が失敗した場合（ネットワークエラー等）は通過させる
+    if (error) return true
+    return data !== null
   }
 
   async function init() {

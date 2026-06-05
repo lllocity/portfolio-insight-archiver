@@ -22,14 +22,4 @@ router.beforeEach(async (to) => {
   if (to.meta.public) return true
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return '/login'
-
-  const { error } = await supabase
-    .from('allowed_emails')
-    .select('email')
-    .eq('email', session.user.email!)
-    .single()
-  if (error) {
-    await supabase.auth.signOut()
-    return '/forbidden'
-  }
 })
