@@ -2,7 +2,7 @@
   <div class="flex min-h-screen items-center justify-center bg-gray-50">
     <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow-md">
       <div class="mb-8 flex flex-col items-center gap-3">
-        <img src="/app_icon.png" alt="Kura" class="h-14 w-auto" />
+        <img src="/logo.png" alt="Kura" class="h-14 w-auto" />
         <p class="text-sm text-gray-500">ログインしてポートフォリオを管理</p>
       </div>
 
