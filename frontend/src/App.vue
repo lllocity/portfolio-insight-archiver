@@ -9,8 +9,8 @@
         <!-- 上段: ロゴ + デスクトップタブ + ログアウト -->
         <div class="flex h-12 items-center gap-1">
           <div class="mr-4 flex items-center gap-2">
-            <img :src="'/logo.png'" alt="マイポートフォリオ帳" class="h-7 w-7 rounded" />
-            <span class="text-sm font-bold text-gray-800">マイポートフォリオ帳</span>
+            <img :src="'/app_icon.png'" alt="Kura" class="h-7 w-7 rounded" />
+            <span class="text-sm font-bold text-gray-800">Kura</span>
           </div>
 
           <!-- タブ（sm以上で上段表示） -->
