@@ -4,11 +4,13 @@ import PortfolioPage from '@/pages/PortfolioPage.vue'
 import HistoryPage from '@/pages/HistoryPage.vue'
 import PromptPage from '@/pages/PromptPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
+import ForbiddenPage from '@/pages/ForbiddenPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', component: LoginPage, meta: { public: true } },
+    { path: '/forbidden', component: ForbiddenPage, meta: { public: true } },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', component: PortfolioPage },
     { path: '/history', component: HistoryPage },
@@ -20,4 +22,14 @@ router.beforeEach(async (to) => {
   if (to.meta.public) return true
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return '/login'
+
+  const { error } = await supabase
+    .from('allowed_emails')
+    .select('email')
+    .eq('email', session.user.email!)
+    .single()
+  if (error) {
+    await supabase.auth.signOut()
+    return '/forbidden'
+  }
 })

@@ -13,10 +13,21 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = session?.user ?? null
     loading.value = false
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange(async (_event, session) => {
       user.value = session?.user ?? null
       if (_event === 'SIGNED_OUT') {
         router.push('/login')
+      }
+      if (_event === 'SIGNED_IN' && session?.user?.email) {
+        const { error } = await supabase
+          .from('allowed_emails')
+          .select('email')
+          .eq('email', session.user.email)
+          .single()
+        if (error) {
+          await signOut()
+          router.push('/forbidden')
+        }
       }
     })
   }
