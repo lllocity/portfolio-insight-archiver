@@ -9,15 +9,10 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(true)
   const isAllowed = ref(false)
 
-  async function checkAllowlist(email: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('allowed_emails')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle()
-    // クエリ自体が失敗した場合（ネットワークエラー等）は通過させる
-    if (error) return true
-    return data !== null
+  async function checkAllowlist(): Promise<boolean> {
+    const { data, error } = await supabase.rpc('is_email_allowed')
+    if (error) return false
+    return data === true
   }
 
   async function init() {
@@ -25,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = session?.user ?? null
 
     if (session?.user?.email) {
-      isAllowed.value = await checkAllowlist(session.user.email)
+      isAllowed.value = await checkAllowlist()
       if (!isAllowed.value) {
         await signOut()
         loading.value = false
@@ -43,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
         router.push('/login')
       }
       if (_event === 'SIGNED_IN' && session?.user?.email) {
-        isAllowed.value = await checkAllowlist(session.user.email)
+        isAllowed.value = await checkAllowlist()
         if (!isAllowed.value) {
           await signOut()
           router.push('/forbidden')
