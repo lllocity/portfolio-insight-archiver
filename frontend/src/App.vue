@@ -9,7 +9,7 @@
         <!-- 上段: ロゴ + デスクトップタブ + ログアウト -->
         <div class="flex h-12 items-center gap-1">
           <div class="mr-4 flex items-center gap-2">
-            <img :src="'/logo.png'" alt="Kura" class="h-7 w-auto" />
+            <img :src="'/logo.png'" alt="Kura" class="h-9 w-auto" />
           </div>
 
           <!-- タブ（sm以上で上段表示） -->
