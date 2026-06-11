@@ -31,6 +31,8 @@ export interface SectorAllocation {
   totalValuation: string
   allocationPct: string
   holdingCount: number
+  totalProfitLoss: string
+  totalProfitLossPct: string
 }
 
 export interface TickerSummary {

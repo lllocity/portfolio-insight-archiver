@@ -74,21 +74,27 @@ Deno.serve(async (req) => {
 
     const cashBalance = (snapshot as any).cash_balance ?? 0
 
-    const sectorMap = new Map<string, { valuation: number; count: number }>()
+    const sectorMap = new Map<string, { valuation: number; count: number; profitLoss: number }>()
     for (const h of enriched) {
       const val = parseFloat(h.totalValuation)
-      const existing = sectorMap.get(h.sectorName) ?? { valuation: 0, count: 0 }
-      sectorMap.set(h.sectorName, { valuation: existing.valuation + val, count: existing.count + 1 })
+      const pl = parseFloat(h.totalProfitLoss)
+      const existing = sectorMap.get(h.sectorName) ?? { valuation: 0, count: 0, profitLoss: 0 }
+      sectorMap.set(h.sectorName, { valuation: existing.valuation + val, count: existing.count + 1, profitLoss: existing.profitLoss + pl })
     }
     const totalStockVal = Array.from(sectorMap.values()).reduce((s, v) => s + v.valuation, 0)
     const totalAssets = totalStockVal + cashBalance
     const sectors = Array.from(sectorMap.entries())
-      .map(([name, { valuation, count }]) => ({
-        sector33Name: name,
-        totalValuation: String(Math.round(valuation)),
-        allocationPct: totalAssets > 0 ? (valuation / totalAssets * 100).toFixed(2) : '0',
-        holdingCount: count,
-      }))
+      .map(([name, { valuation, count, profitLoss }]) => {
+        const costBasis = valuation - profitLoss
+        return {
+          sector33Name: name,
+          totalValuation: String(Math.round(valuation)),
+          allocationPct: totalAssets > 0 ? (valuation / totalAssets * 100).toFixed(2) : '0',
+          holdingCount: count,
+          totalProfitLoss: String(Math.round(profitLoss)),
+          totalProfitLossPct: costBasis > 0 ? (profitLoss / costBasis * 100).toFixed(2) : '0',
+        }
+      })
       .sort((a, b) => parseFloat(b.totalValuation) - parseFloat(a.totalValuation))
     if (cashBalance > 0) {
       sectors.push({
@@ -96,6 +102,8 @@ Deno.serve(async (req) => {
         totalValuation: String(cashBalance),
         allocationPct: totalAssets > 0 ? (cashBalance / totalAssets * 100).toFixed(2) : '0',
         holdingCount: 0,
+        totalProfitLoss: '0',
+        totalProfitLossPct: '0',
       })
     }
 

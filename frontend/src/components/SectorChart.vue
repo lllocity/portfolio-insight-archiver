@@ -14,6 +14,8 @@
               <th class="pb-1 text-left font-medium">セクター</th>
               <th class="pb-1 text-right font-medium">構成比</th>
               <th class="pb-1 text-right font-medium">評価額</th>
+              <th class="pb-1 text-right font-medium">損益</th>
+              <th class="pb-1 text-right font-medium">損益率</th>
               <th class="pb-1 text-right font-medium">銘柄数</th>
             </tr>
           </thead>
@@ -22,6 +24,8 @@
               <td class="py-1">{{ s.sector33Name }}</td>
               <td class="py-1 text-right font-medium">{{ s.allocationPct }}%</td>
               <td class="py-1 text-right">{{ f.formatCurrency(s.totalValuation) }}</td>
+              <td class="py-1 text-right" :class="f.colorClass(s.totalProfitLoss)">{{ f.formatCurrency(s.totalProfitLoss) }}</td>
+              <td class="py-1 text-right" :class="f.colorClass(s.totalProfitLossPct)">{{ f.formatPct(s.totalProfitLossPct) }}</td>
               <td class="py-1 text-right text-gray-500">{{ s.holdingCount }}</td>
             </tr>
           </tbody>
