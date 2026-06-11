@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import AppError from '@/components/AppError.vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
@@ -89,5 +89,10 @@ onMounted(async () => {
     await portfolioStore.load()
     if (portfolioStore.error) globalError.value = portfolioStore.error
   }
+})
+
+// portfolioStore.error が解消されたら AppError も自動的に閉じる
+watch(() => portfolioStore.error, (newError) => {
+  if (!newError) globalError.value = null
 })
 </script>

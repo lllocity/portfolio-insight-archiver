@@ -105,6 +105,8 @@ function onFileChange(event: Event) {
   validationError.value = ''
 }
 
+const IMPORT_TIMEOUT_MS = 120_000
+
 async function handleImport() {
   validationError.value = ''
   if (!selectedFile.value) {
@@ -114,7 +116,13 @@ async function handleImport() {
   loading.value = true
   result.value = null
   try {
-    result.value = await importCsv(selectedFile.value, snapshotDate.value, cashBalance.value)
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('インポートがタイムアウトしました。再試行してください。')), IMPORT_TIMEOUT_MS)
+    )
+    result.value = await Promise.race([
+      importCsv(selectedFile.value, snapshotDate.value, cashBalance.value),
+      timeoutPromise,
+    ])
     emit('imported')
   } catch (e: unknown) {
     validationError.value = (e as { message?: string })?.message ?? 'インポートに失敗しました'

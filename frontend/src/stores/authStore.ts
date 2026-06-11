@@ -37,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAllowed.value = false
         router.push('/login')
       }
-      if (_event === 'SIGNED_IN' && session?.user?.email) {
+      if (_event === 'SIGNED_IN' && session?.user?.email && !isAllowed.value) {
         isAllowed.value = await checkAllowlist()
         if (!isAllowed.value) {
           await signOut()
