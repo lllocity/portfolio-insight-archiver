@@ -1,32 +1,32 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4">
     <h3 class="mb-3 text-sm font-semibold text-gray-700">{{ title ?? 'セクター別構成比' }}</h3>
-    <div class="flex flex-col gap-4 md:flex-row md:items-start">
+    <div class="flex flex-col gap-4">
       <!-- ドーナツチャート -->
-      <div class="mx-auto w-64 shrink-0">
+      <div class="mx-auto w-56 shrink-0">
         <Doughnut :data="chartData" :options="chartOptions" />
       </div>
       <!-- 凡例テーブル -->
-      <div class="flex-1 overflow-x-auto">
+      <div class="overflow-x-auto">
         <table class="w-full text-xs" data-testid="sector-legend">
           <thead class="text-gray-500">
             <tr class="border-b border-gray-100">
               <th class="pb-1 text-left font-medium">セクター</th>
-              <th class="pb-1 text-right font-medium">構成比</th>
-              <th class="pb-1 text-right font-medium">評価額</th>
-              <th class="pb-1 text-right font-medium">損益</th>
-              <th class="pb-1 text-right font-medium">損益率</th>
-              <th class="pb-1 text-right font-medium">銘柄数</th>
+              <th class="pb-1 text-right font-medium whitespace-nowrap">構成比</th>
+              <th class="pb-1 text-right font-medium whitespace-nowrap">評価額</th>
+              <th class="pb-1 text-right font-medium whitespace-nowrap">損益</th>
+              <th class="pb-1 text-right font-medium whitespace-nowrap">損益率</th>
+              <th class="pb-1 text-right font-medium whitespace-nowrap">銘柄数</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr v-for="s in sortedSectors" :key="s.sector33Name" class="hover:bg-gray-50">
               <td class="py-1">{{ s.sector33Name }}</td>
-              <td class="py-1 text-right font-medium">{{ s.allocationPct }}%</td>
-              <td class="py-1 text-right">{{ f.formatCurrency(s.totalValuation) }}</td>
-              <td class="py-1 text-right" :class="f.colorClass(s.totalProfitLoss)">{{ f.formatCurrency(s.totalProfitLoss) }}</td>
-              <td class="py-1 text-right" :class="f.colorClass(s.totalProfitLossPct)">{{ f.formatPct(s.totalProfitLossPct) }}</td>
-              <td class="py-1 text-right text-gray-500">{{ s.holdingCount }}</td>
+              <td class="py-1 text-right font-medium whitespace-nowrap">{{ s.allocationPct }}%</td>
+              <td class="py-1 text-right whitespace-nowrap">{{ f.formatCurrency(s.totalValuation) }}</td>
+              <td class="py-1 text-right whitespace-nowrap" :class="f.colorClass(s.totalProfitLoss)">{{ f.formatCurrency(s.totalProfitLoss) }}</td>
+              <td class="py-1 text-right whitespace-nowrap" :class="f.colorClass(s.totalProfitLossPct)">{{ f.formatPct(s.totalProfitLossPct) }}</td>
+              <td class="py-1 text-right whitespace-nowrap text-gray-500">{{ s.holdingCount }}</td>
             </tr>
           </tbody>
         </table>
