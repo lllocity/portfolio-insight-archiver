@@ -10,6 +10,7 @@
         <input
           type="file"
           accept=".csv"
+          multiple
           class="hidden"
           data-testid="csv-import-file-input"
           :disabled="loading"
@@ -17,12 +18,12 @@
         />
       </label>
       <span class="flex-1 truncate text-sm text-gray-500">
-        {{ selectedFile?.name ?? '選択されていません' }}
+        {{ fileLabel }}
       </span>
       <button
         data-testid="csv-import-button"
         class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        :disabled="loading || !selectedFile"
+        :disabled="loading || selectedFiles.length === 0"
         @click="handleImport"
       >
         {{ loading ? '取り込み中...' : 'インポート' }}
@@ -70,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { importCsv } from '@/api/csvApi'
 import { supabase } from '@/lib/supabase'
 import type { ImportResult } from '@/types/import'
@@ -79,12 +80,18 @@ const emit = defineEmits<{ imported: [] }>()
 
 const today = new Date().toISOString().slice(0, 10)
 
-const selectedFile = ref<File | null>(null)
+const selectedFiles = ref<File[]>([])
 const snapshotDate = ref(today)
 const cashBalance = ref<number>(0)
 const loading = ref(false)
 const result = ref<ImportResult | null>(null)
 const validationError = ref('')
+
+const fileLabel = computed(() => {
+  if (selectedFiles.value.length === 0) return '選択されていません'
+  if (selectedFiles.value.length === 1) return selectedFiles.value[0].name
+  return `${selectedFiles.value.length} ファイル選択中`
+})
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
@@ -100,7 +107,7 @@ onMounted(async () => {
 
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
-  selectedFile.value = input.files?.[0] ?? null
+  selectedFiles.value = Array.from(input.files ?? [])
   result.value = null
   validationError.value = ''
 }
@@ -109,7 +116,7 @@ const IMPORT_TIMEOUT_MS = 120_000
 
 async function handleImport() {
   validationError.value = ''
-  if (!selectedFile.value) {
+  if (selectedFiles.value.length === 0) {
     validationError.value = 'CSVファイルを選択してください'
     return
   }
@@ -120,7 +127,7 @@ async function handleImport() {
       setTimeout(() => reject(new Error('インポートがタイムアウトしました。再試行してください。')), IMPORT_TIMEOUT_MS)
     )
     result.value = await Promise.race([
-      importCsv(selectedFile.value, snapshotDate.value, cashBalance.value),
+      importCsv(selectedFiles.value, snapshotDate.value, cashBalance.value),
       timeoutPromise,
     ])
     emit('imported')

@@ -22,14 +22,18 @@ Deno.serve(async (req) => {
 
   try {
     const formData = await req.formData()
-    const file = formData.get('file') as File | null
+    const files = formData.getAll('file') as File[]
     const snapshotDateStr = formData.get('snapshotDate') as string | null
 
-    if (!file) return jsonResponse({ error: 'No file provided' }, 400)
+    if (files.length === 0) return jsonResponse({ error: 'No file provided' }, 400)
 
-    const buffer = await file.arrayBuffer()
-    const text = new TextDecoder('shift-jis').decode(buffer)
-    const records = parseCsv(text)
+    const textParts = await Promise.all(
+      files.map(async (f) => {
+        const buf = await f.arrayBuffer()
+        return new TextDecoder('shift-jis').decode(buf)
+      }),
+    )
+    const records = parseCsv(textParts.join('\n'))
 
     const cashBalanceStr = formData.get('cashBalance') as string | null
     const cashBalance = cashBalanceStr ? Math.round(parseFloat(cashBalanceStr)) : 0

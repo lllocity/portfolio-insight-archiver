@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import type { ImportResult } from '@/types/import'
 
-export async function importCsv(file: File, snapshotDate?: string, cashBalance?: number): Promise<ImportResult> {
+export async function importCsv(files: File[], snapshotDate?: string, cashBalance?: number): Promise<ImportResult> {
   const formData = new FormData()
-  formData.append('file', file)
+  for (const f of files) formData.append('file', f)
   if (snapshotDate) formData.append('snapshotDate', snapshotDate)
   if (cashBalance !== undefined) formData.append('cashBalance', String(cashBalance))
   const { data, error } = await supabase.functions.invoke('csv-import', {
