@@ -57,13 +57,13 @@ const chartData = computed(() => ({
     },
     {
       type: 'bar' as const,
-      label: '損益',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
+      label: '損益率',
+      data: sorted.value.map((s) => parseFloat(s.totalProfitLossPct)),
       backgroundColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)',
+        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)',
       ),
       borderColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
+        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
       ),
       borderWidth: 1,
       yAxisID: 'yRight',
@@ -85,11 +85,10 @@ const chartOptions = computed(() => ({
       callbacks: {
         label: (ctx: { dataset: { label?: string; yAxisID?: string }; dataIndex: number; raw: unknown }) => {
           const val = ctx.raw as number
-          const pct = parseFloat(sorted.value[ctx.dataIndex]?.totalProfitLossPct ?? '0')
-          const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'
-
           if (ctx.dataset.yAxisID === 'yRight') {
-            return ` ${ctx.dataset.label}: ${jpy.format(val).replace(/￥/g, '¥')} (${pctStr})`
+            const pl = parseFloat(sorted.value[ctx.dataIndex]?.totalProfitLoss ?? '0')
+            const sign = val >= 0 ? '+' : ''
+            return ` ${ctx.dataset.label}: ${sign}${val.toFixed(2)}% (${jpy.format(pl).replace(/￥/g, '¥')})`
           }
           return ` ${ctx.dataset.label}: ${jpy.format(val).replace(/￥/g, '¥')}`
         },
@@ -117,12 +116,7 @@ const chartOptions = computed(() => ({
       position: 'right' as const,
       ticks: {
         font: { size: 10 },
-        callback: (value: number | string) => {
-          const v = Number(value)
-          if (Math.abs(v) >= 1_000_000) return `¥${(v / 1_000_000).toFixed(0)}M`
-          if (Math.abs(v) >= 10_000) return `¥${(v / 10_000).toFixed(0)}万`
-          return `¥${v.toLocaleString()}`
-        },
+        callback: (value: number | string) => `${Number(value).toFixed(1)}%`,
       },
       grid: { drawOnChartArea: false },
     },
