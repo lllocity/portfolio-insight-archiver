@@ -57,18 +57,13 @@ const chartData = computed(() => ({
     },
     {
       type: 'bar' as const,
-      label: '損益率',
-      // 総資産 × 損益率% → 折れ線の高さに対してちょうど損益率分の高さになる
-      data: sorted.value.map((s) => {
-        const assets = parseFloat(s.totalValuation) + parseFloat(s.cashBalance)
-        const pct = parseFloat(s.totalProfitLossPct)
-        return assets * pct / 100
-      }),
+      label: '損益',
+      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
       backgroundColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)',
+        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)',
       ),
       borderColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
+        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
       ),
       borderWidth: 1,
       yAxisID: 'y',
@@ -90,11 +85,10 @@ const chartOptions = computed(() => ({
       callbacks: {
         label: (ctx: { dataset: { label?: string }; dataIndex: number; raw: unknown }) => {
           const s = sorted.value[ctx.dataIndex]
-          if (ctx.dataset.label === '損益率') {
+          if (ctx.dataset.label === '損益') {
             const pct = parseFloat(s?.totalProfitLossPct ?? '0')
-            const pl = parseFloat(s?.totalProfitLoss ?? '0')
             const sign = pct >= 0 ? '+' : ''
-            return ` 損益率: ${sign}${pct.toFixed(2)}% (${jpy.format(pl).replace(/￥/g, '¥')})`
+            return ` 損益: ${jpy.format(ctx.raw as number).replace(/￥/g, '¥')} (${sign}${pct.toFixed(2)}%)`
           }
           return ` ${ctx.dataset.label}: ${jpy.format(ctx.raw as number).replace(/￥/g, '¥')}`
         },
