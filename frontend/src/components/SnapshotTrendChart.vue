@@ -12,7 +12,9 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
   BarElement,
+  LineController,
   PointElement,
   LineElement,
   Tooltip,
@@ -20,7 +22,7 @@ import {
 } from 'chart.js'
 import type { SnapshotListItem } from '@/types/portfolio'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, LineController, PointElement, LineElement, Tooltip, Legend)
 
 const props = defineProps<{ snapshots: SnapshotListItem[] }>()
 
