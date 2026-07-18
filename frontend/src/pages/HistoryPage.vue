@@ -14,6 +14,9 @@
     </div>
 
     <template v-else>
+      <!-- 推移グラフ -->
+      <SnapshotTrendChart class="mb-6" :snapshots="snapshots" />
+
       <p class="mb-3 text-xs text-gray-500">
         行をクリックすると保有銘柄を展開します。
       </p>
@@ -32,7 +35,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <template v-for="s in snapshots" :key="s.snapshotDate">
+            <template v-for="s in displayedSnapshots" :key="s.snapshotDate">
               <!-- スナップショット行 -->
               <tr
                 data-testid="snapshot-row"
@@ -106,6 +109,16 @@
         </table>
       </div>
 
+      <!-- もっと見る -->
+      <div v-if="snapshots.length > displayCount" class="mb-6 text-center">
+        <button
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+          @click="displayCount += 30"
+        >
+          もっと見る（残り {{ snapshots.length - displayCount }} 件）
+        </button>
+      </div>
+
       <!-- スナップショット比較 -->
       <HistoryCompareView />
     </template>
@@ -113,17 +126,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { fetchSnapshotDates } from '@/api/portfolioApi'
 import { fetchSnapshotHoldings } from '@/api/snapshotHoldingsApi'
 import type { SnapshotHolding } from '@/api/snapshotHoldingsApi'
 import { useFormatters } from '@/composables/useFormatters'
 import type { SnapshotListItem } from '@/types/portfolio'
 import HistoryCompareView from '@/components/HistoryCompareView.vue'
+import SnapshotTrendChart from '@/components/SnapshotTrendChart.vue'
 
 const f = useFormatters()
 const snapshots = ref<SnapshotListItem[]>([])
 const loading = ref(false)
+const displayCount = ref(30)
+const displayedSnapshots = computed(() => snapshots.value.slice(0, displayCount.value))
 
 // アコーディオン
 const expandedDate = ref<string | null>(null)
