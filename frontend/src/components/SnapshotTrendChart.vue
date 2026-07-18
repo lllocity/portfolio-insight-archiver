@@ -1,7 +1,7 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4">
     <h3 class="mb-3 text-sm font-semibold text-gray-700">推移グラフ</h3>
-    <Chart type="line" :data="chartData" :options="chartOptions" />
+    <Chart type="bar" :data="chartData" :options="chartOptions" />
   </div>
 </template>
 
@@ -12,16 +12,27 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
+  BarElement,
   LineController,
   PointElement,
   LineElement,
-  Filler,
   Tooltip,
   Legend,
 } from 'chart.js'
 import type { SnapshotListItem } from '@/types/portfolio'
 
-ChartJS.register(CategoryScale, LinearScale, LineController, PointElement, LineElement, Filler, Tooltip, Legend)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  LineController,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+)
 
 const props = defineProps<{ snapshots: SnapshotListItem[] }>()
 
@@ -33,64 +44,52 @@ const chartData = computed(() => ({
   labels: sorted.value.map((s) => s.snapshotDate),
   datasets: [
     {
-      label: '株式評価額',
-      data: sorted.value.map((s) => parseFloat(s.totalValuation)),
-      fill: true,
-      backgroundColor: 'rgba(59,130,246,0.55)',
-      borderColor: 'rgba(59,130,246,0.85)',
-      borderWidth: 1.5,
-      pointRadius: 0,
-      tension: 0.3,
-      yAxisID: 'y',
-      order: 2,
-    },
-    {
-      label: '損益',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
-      fill: false,
-      borderColor: '#16a34a',
-      backgroundColor: 'transparent',
-      borderWidth: 2.5,
-      pointRadius: 2,
-      tension: 0.3,
-      yAxisID: 'y',
-      order: 1,
-    },
-    {
-      label: '損益率',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLossPct)),
-      fill: false,
-      borderColor: '#7c3aed',
+      type: 'line' as const,
+      label: '総資産',
+      data: sorted.value.map((s) => parseFloat(s.totalValuation) + parseFloat(s.cashBalance)),
+      borderColor: '#2563eb',
       backgroundColor: 'transparent',
       borderWidth: 2,
-      pointRadius: 0,
+      pointRadius: 2,
       tension: 0.3,
-      yAxisID: 'y2',
+      yAxisID: 'yLeft',
       order: 0,
+    },
+    {
+      type: 'bar' as const,
+      label: '損益',
+      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
+      backgroundColor: sorted.value.map((s) =>
+        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)',
+      ),
+      borderColor: sorted.value.map((s) =>
+        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
+      ),
+      borderWidth: 1,
+      yAxisID: 'yRight',
+      order: 1,
     },
   ],
 }))
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   animation: false,
   plugins: {
     legend: {
       display: true,
       position: 'bottom' as const,
-      labels: {
-        boxWidth: 12,
-        font: { size: 11 },
-        filter: (item: { text: string }) => item.text !== '損益率',
-      },
+      labels: { boxWidth: 12, font: { size: 11 } },
     },
     tooltip: {
       callbacks: {
-        label: (ctx: { dataset: { label?: string; yAxisID?: string }; raw: unknown }) => {
+        label: (ctx: { dataset: { label?: string; yAxisID?: string }; dataIndex: number; raw: unknown }) => {
           const val = ctx.raw as number
-          if (ctx.dataset.yAxisID === 'y2') {
-            const sign = val >= 0 ? '+' : ''
-            return ` ${ctx.dataset.label}: ${sign}${val.toFixed(2)}%`
+          const pct = parseFloat(sorted.value[ctx.dataIndex]?.totalProfitLossPct ?? '0')
+          const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'
+
+          if (ctx.dataset.yAxisID === 'yRight') {
+            return ` ${ctx.dataset.label}: ${jpy.format(val).replace(/￥/g, '¥')} (${pctStr})`
           }
           return ` ${ctx.dataset.label}: ${jpy.format(val).replace(/￥/g, '¥')}`
         },
@@ -101,7 +100,8 @@ const chartOptions = {
     x: {
       ticks: { font: { size: 10 }, maxTicksLimit: 8 },
     },
-    y: {
+    yLeft: {
+      position: 'left' as const,
       ticks: {
         font: { size: 10 },
         callback: (value: number | string) => {
@@ -111,10 +111,21 @@ const chartOptions = {
           return `¥${v.toLocaleString()}`
         },
       },
+      grid: { color: 'rgba(0,0,0,0.06)' },
     },
-    y2: {
-      display: false,
+    yRight: {
+      position: 'right' as const,
+      ticks: {
+        font: { size: 10 },
+        callback: (value: number | string) => {
+          const v = Number(value)
+          if (Math.abs(v) >= 1_000_000) return `¥${(v / 1_000_000).toFixed(0)}M`
+          if (Math.abs(v) >= 10_000) return `¥${(v / 10_000).toFixed(0)}万`
+          return `¥${v.toLocaleString()}`
+        },
+      },
+      grid: { drawOnChartArea: false },
     },
   },
-}
+}))
 </script>
