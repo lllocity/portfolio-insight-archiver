@@ -1,7 +1,7 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4">
     <h3 class="mb-3 text-sm font-semibold text-gray-700">推移グラフ</h3>
-    <Chart type="bar" :data="chartData" :options="chartOptions" />
+    <Chart type="line" :data="chartData" :options="chartOptions" />
   </div>
 </template>
 
@@ -12,21 +12,19 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarController,
-  BarElement,
   LineController,
   PointElement,
   LineElement,
+  Filler,
   Tooltip,
   Legend,
 } from 'chart.js'
 import type { SnapshotListItem } from '@/types/portfolio'
 
-ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, LineController, PointElement, LineElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, LineController, PointElement, LineElement, Filler, Tooltip, Legend)
 
 const props = defineProps<{ snapshots: SnapshotListItem[] }>()
 
-// グラフ用データは日付昇順
 const sorted = computed(() => [...props.snapshots].reverse())
 
 const jpy = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' })
@@ -35,27 +33,33 @@ const chartData = computed(() => ({
   labels: sorted.value.map((s) => s.snapshotDate),
   datasets: [
     {
-      type: 'bar' as const,
-      label: '総資産',
-      data: sorted.value.map((s) => parseFloat(s.totalValuation) + parseFloat(s.cashBalance)),
-      backgroundColor: 'rgba(59,130,246,0.65)',
-      yAxisID: 'y',
-      order: 2,
-    },
-    {
-      type: 'bar' as const,
-      label: '損益',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
-      backgroundColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'
-      ),
+      label: '現金',
+      data: sorted.value.map((s) => parseFloat(s.cashBalance)),
+      fill: true,
+      backgroundColor: 'rgba(59,130,246,0.75)',
+      borderColor: 'rgba(59,130,246,0.9)',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0.3,
       yAxisID: 'y',
       order: 1,
     },
     {
-      type: 'line' as const,
+      label: '株式評価額',
+      data: sorted.value.map((s) => parseFloat(s.totalValuation)),
+      fill: true,
+      backgroundColor: 'rgba(239,68,68,0.65)',
+      borderColor: 'rgba(239,68,68,0.8)',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0.3,
+      yAxisID: 'y',
+      order: 2,
+    },
+    {
       label: '損益率',
       data: sorted.value.map((s) => parseFloat(s.totalProfitLossPct)),
+      fill: false,
       borderColor: '#f59e0b',
       backgroundColor: 'transparent',
       borderWidth: 2,
@@ -74,7 +78,11 @@ const chartOptions = {
     legend: {
       display: true,
       position: 'bottom' as const,
-      labels: { boxWidth: 12, font: { size: 11 } },
+      labels: {
+        boxWidth: 12,
+        font: { size: 11 },
+        filter: (item: { text: string }) => item.text !== '損益率',
+      },
     },
     tooltip: {
       callbacks: {
@@ -94,6 +102,7 @@ const chartOptions = {
       ticks: { font: { size: 10 }, maxTicksLimit: 8 },
     },
     y: {
+      stacked: true,
       ticks: {
         font: { size: 10 },
         callback: (value: number | string) => {
@@ -106,6 +115,7 @@ const chartOptions = {
     },
     y2: {
       display: false,
+      stacked: false,
     },
   },
 }
