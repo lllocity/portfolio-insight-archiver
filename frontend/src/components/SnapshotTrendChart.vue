@@ -52,21 +52,26 @@ const chartData = computed(() => ({
       borderWidth: 2,
       pointRadius: 2,
       tension: 0.3,
-      yAxisID: 'yLeft',
+      yAxisID: 'y',
       order: 0,
     },
     {
       type: 'bar' as const,
       label: '損益率',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLossPct)),
+      // 総資産 × 損益率% → 折れ線の高さに対してちょうど損益率分の高さになる
+      data: sorted.value.map((s) => {
+        const assets = parseFloat(s.totalValuation) + parseFloat(s.cashBalance)
+        const pct = parseFloat(s.totalProfitLossPct)
+        return assets * pct / 100
+      }),
       backgroundColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)',
+        parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)',
       ),
       borderColor: sorted.value.map((s) =>
         parseFloat(s.totalProfitLossPct) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
       ),
       borderWidth: 1,
-      yAxisID: 'yRight',
+      yAxisID: 'y',
       order: 1,
     },
   ],
@@ -83,14 +88,15 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (ctx: { dataset: { label?: string; yAxisID?: string }; dataIndex: number; raw: unknown }) => {
-          const val = ctx.raw as number
-          if (ctx.dataset.yAxisID === 'yRight') {
-            const pl = parseFloat(sorted.value[ctx.dataIndex]?.totalProfitLoss ?? '0')
-            const sign = val >= 0 ? '+' : ''
-            return ` ${ctx.dataset.label}: ${sign}${val.toFixed(2)}% (${jpy.format(pl).replace(/￥/g, '¥')})`
+        label: (ctx: { dataset: { label?: string }; dataIndex: number; raw: unknown }) => {
+          const s = sorted.value[ctx.dataIndex]
+          if (ctx.dataset.label === '損益率') {
+            const pct = parseFloat(s?.totalProfitLossPct ?? '0')
+            const pl = parseFloat(s?.totalProfitLoss ?? '0')
+            const sign = pct >= 0 ? '+' : ''
+            return ` 損益率: ${sign}${pct.toFixed(2)}% (${jpy.format(pl).replace(/￥/g, '¥')})`
           }
-          return ` ${ctx.dataset.label}: ${jpy.format(val).replace(/￥/g, '¥')}`
+          return ` ${ctx.dataset.label}: ${jpy.format(ctx.raw as number).replace(/￥/g, '¥')}`
         },
       },
     },
@@ -99,8 +105,7 @@ const chartOptions = computed(() => ({
     x: {
       ticks: { font: { size: 10 }, maxTicksLimit: 8 },
     },
-    yLeft: {
-      position: 'left' as const,
+    y: {
       ticks: {
         font: { size: 10 },
         callback: (value: number | string) => {
@@ -111,14 +116,6 @@ const chartOptions = computed(() => ({
         },
       },
       grid: { color: 'rgba(0,0,0,0.06)' },
-    },
-    yRight: {
-      position: 'right' as const,
-      ticks: {
-        font: { size: 10 },
-        callback: (value: number | string) => `${Number(value).toFixed(1)}%`,
-      },
-      grid: { drawOnChartArea: false },
     },
   },
 }))
