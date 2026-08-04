@@ -2,13 +2,9 @@
   <div>
     <h1 class="mb-4 text-lg font-bold text-gray-800">ポートフォリオ</h1>
 
-    <!-- CSVインポートフォーム -->
-    <div class="mb-4">
+    <!-- CSVインポート（保有証券 / 実現損益・配当）を横並び2カラム -->
+    <div class="mb-6 grid gap-4 lg:grid-cols-2 lg:items-start">
       <CsvImportForm @imported="onImported" />
-    </div>
-
-    <!-- 実現損益・配当CSVインポート -->
-    <div class="mb-6">
       <RealizedDividendImportForm @imported="onTotalReturnImported" />
     </div>
 
