@@ -78,23 +78,23 @@ const chartData = computed(() => ({
   labels: rows.value.map((r) => r.date),
   datasets: [
     {
-      // 下地: 投下額（元本＋現金）を 0 まで塗る
+      // 下地: 投下額（元本＋現金）を 0 まで塗る（資産本体＝青）
       label: '投下額（元本＋現金）',
       data: rows.value.map((r) => r.base),
-      borderColor: '#64748b',
-      backgroundColor: 'rgba(100,116,139,0.30)',
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37,99,235,0.28)',
       borderWidth: 1,
       pointRadius: 0,
       fill: 'origin' as const,
       order: 3,
     },
     {
-      // 総資産（絶対値）。下地との間を塗る＝含み損益の帯。負でも正しく描ける
+      // 総資産（絶対値）。下地との間を塗る＝含み損益の帯（緑）。負でも正しく描ける
       label: '総資産',
       data: rows.value.map((r) => r.total),
       borderColor: '#16a34a',
-      backgroundColor: 'rgba(22,163,74,0.40)',
-      borderWidth: 1,
+      backgroundColor: 'rgba(22,163,74,0.55)',
+      borderWidth: 2,
       pointRadius: 0,
       fill: '-1' as const,
       order: 2,
