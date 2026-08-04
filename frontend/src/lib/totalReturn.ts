@@ -6,6 +6,25 @@ function yearOf(date: string): number {
 }
 
 /**
+ * 各スナップショット日時点の累計トータルリターンを算出する。
+ *   累計リターン(t) = 含み損益(t) + Σ実現損益(約定日 ≤ t) + Σ受取配当(受渡日 ≤ t)
+ * 日付は 'YYYY-MM-DD' 前提（辞書順比較＝時系列比較）。返り値は snapshotDate → 金額。
+ */
+export function cumulativeReturnByDate(
+  snapshots: { snapshotDate: string; unrealized: number }[],
+  realized: RealizedPnlRow[],
+  dividends: DividendRow[],
+): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const s of snapshots) {
+    const rSum = realized.reduce((acc, r) => acc + (r.tradeDate <= s.snapshotDate ? r.realizedPl : 0), 0)
+    const dSum = dividends.reduce((acc, d) => acc + (d.payDate <= s.snapshotDate ? d.amountNet : 0), 0)
+    result[s.snapshotDate] = s.unrealized + rSum + dSum
+  }
+  return result
+}
+
+/**
  * 生涯の実現損益・受取配当の合計と、取り込み済みデータの集計期間を求める。
  * 含み損益は現在残高（portfolioStore）側から合算するためここには含めない。
  */

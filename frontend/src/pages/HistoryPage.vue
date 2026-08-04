@@ -15,7 +15,12 @@
 
     <template v-else>
       <!-- 推移グラフ -->
-      <SnapshotTrendChart class="mb-6" :snapshots="snapshots" />
+      <SnapshotTrendChart
+        class="mb-6"
+        :snapshots="snapshots"
+        :realized="trStore.realized"
+        :dividends="trStore.dividends"
+      />
 
       <!-- 年ごとの確定損益（実現損益＋受取配当・暦年） -->
       <div class="mb-6">

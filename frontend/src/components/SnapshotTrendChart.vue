@@ -1,7 +1,10 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4">
-    <h3 class="mb-3 text-sm font-semibold text-gray-700">推移グラフ</h3>
-    <Chart type="bar" :data="chartData" :options="chartOptions" />
+    <h3 class="mb-1 text-sm font-semibold text-gray-700">資産・累計損益の推移</h3>
+    <p class="mb-3 text-xs text-gray-400">
+      面＝総資産（下地＝投下額＋現金、緑帯＝含み損益）。折れ線＝累計損益（含み＋実現＋配当）。
+    </p>
+    <Chart type="line" :data="chartData" :options="chartOptions" />
   </div>
 </template>
 
@@ -12,62 +15,101 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarController,
-  BarElement,
   LineController,
   PointElement,
   LineElement,
+  Filler,
   Tooltip,
   Legend,
 } from 'chart.js'
 import type { SnapshotListItem } from '@/types/portfolio'
+import type { DividendRow, RealizedPnlRow } from '@/types/totalReturn'
+import { cumulativeReturnByDate } from '@/lib/totalReturn'
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarController,
-  BarElement,
   LineController,
   PointElement,
   LineElement,
+  Filler,
   Tooltip,
   Legend,
 )
 
-const props = defineProps<{ snapshots: SnapshotListItem[] }>()
+const props = defineProps<{
+  snapshots: SnapshotListItem[]
+  realized?: RealizedPnlRow[]
+  dividends?: DividendRow[]
+}>()
 
+// 古い→新しい順（左→右）
 const sorted = computed(() => [...props.snapshots].reverse())
 
 const jpy = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' })
+const fmt = (v: number) => jpy.format(v).replace(/￥/g, '¥')
+
+// 各時点の値を事前計算（絶対値。積み上げは使わず面間塗りで内訳を表現するため、
+// 含み損益が負でも 総資産 < 投下額 として正しく描ける）
+const rows = computed(() =>
+  sorted.value.map((s) => {
+    const valuation = parseFloat(s.totalValuation)
+    const cash = parseFloat(s.cashBalance)
+    const unrealized = parseFloat(s.totalProfitLoss)
+    return {
+      date: s.snapshotDate,
+      base: valuation - unrealized + cash, // 投下額（元本相当）＋現金
+      total: valuation + cash, // 総資産 ＝ base + 含み損益
+      unrealized,
+    }
+  }),
+)
+
+// 累計損益（含み＋実現＋配当）を各スナップショット時点で算出
+const cumReturns = computed(() =>
+  cumulativeReturnByDate(
+    sorted.value.map((s) => ({ snapshotDate: s.snapshotDate, unrealized: parseFloat(s.totalProfitLoss) })),
+    props.realized ?? [],
+    props.dividends ?? [],
+  ),
+)
 
 const chartData = computed(() => ({
-  labels: sorted.value.map((s) => s.snapshotDate),
+  labels: rows.value.map((r) => r.date),
   datasets: [
     {
-      type: 'line' as const,
+      // 下地: 投下額（元本＋現金）を 0 まで塗る
+      label: '投下額（元本＋現金）',
+      data: rows.value.map((r) => r.base),
+      borderColor: '#64748b',
+      backgroundColor: 'rgba(100,116,139,0.30)',
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: 'origin' as const,
+      order: 3,
+    },
+    {
+      // 総資産（絶対値）。下地との間を塗る＝含み損益の帯。負でも正しく描ける
       label: '総資産',
-      data: sorted.value.map((s) => parseFloat(s.totalValuation) + parseFloat(s.cashBalance)),
-      borderColor: '#2563eb',
+      data: rows.value.map((r) => r.total),
+      borderColor: '#16a34a',
+      backgroundColor: 'rgba(22,163,74,0.40)',
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: '-1' as const,
+      order: 2,
+    },
+    {
+      // 累計損益（含み＋実現＋配当）。塗らない独立の折れ線
+      label: '累計損益（含み＋実現＋配当）',
+      data: rows.value.map((r) => cumReturns.value[r.date] ?? r.unrealized),
+      borderColor: '#7c3aed',
       backgroundColor: 'transparent',
       borderWidth: 2,
       pointRadius: 2,
       tension: 0.3,
-      yAxisID: 'y',
+      fill: false,
       order: 0,
-    },
-    {
-      type: 'bar' as const,
-      label: '損益',
-      data: sorted.value.map((s) => parseFloat(s.totalProfitLoss)),
-      backgroundColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)',
-      ),
-      borderColor: sorted.value.map((s) =>
-        parseFloat(s.totalProfitLoss) >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)',
-      ),
-      borderWidth: 1,
-      yAxisID: 'y',
-      order: 1,
     },
   ],
 }))
@@ -75,6 +117,7 @@ const chartData = computed(() => ({
 const chartOptions = computed(() => ({
   responsive: true,
   animation: false,
+  interaction: { mode: 'index' as const, intersect: false },
   plugins: {
     legend: {
       display: true,
@@ -83,22 +126,18 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (ctx: { dataset: { label?: string }; dataIndex: number; raw: unknown }) => {
-          const s = sorted.value[ctx.dataIndex]
-          if (ctx.dataset.label === '損益') {
-            const pct = parseFloat(s?.totalProfitLossPct ?? '0')
-            const sign = pct >= 0 ? '+' : ''
-            return ` 損益: ${jpy.format(ctx.raw as number).replace(/￥/g, '¥')} (${sign}${pct.toFixed(2)}%)`
-          }
-          return ` ${ctx.dataset.label}: ${jpy.format(ctx.raw as number).replace(/￥/g, '¥')}`
+        label: (ctx: { dataset: { label?: string }; raw: unknown }) =>
+          ` ${ctx.dataset.label}: ${fmt(ctx.raw as number)}`,
+        // 含み損益（総資産−投下額）を補足
+        afterBody: (items: { dataIndex: number }[]) => {
+          const r = rows.value[items[0]?.dataIndex ?? 0]
+          return r ? `含み損益: ${fmt(r.unrealized)}` : ''
         },
       },
     },
   },
   scales: {
-    x: {
-      ticks: { font: { size: 10 }, maxTicksLimit: 8 },
-    },
+    x: { ticks: { font: { size: 10 }, maxTicksLimit: 8 } },
     y: {
       ticks: {
         font: { size: 10 },
