@@ -61,7 +61,7 @@
         />
       </div>
 
-      <!-- 生涯トータルリターン（含み損益＋実現損益＋受取配当） -->
+      <!-- 累計損益（含み損益＋実現損益＋受取配当） -->
       <div class="mb-6">
         <TotalReturnPanel
           :unrealized="unrealized"

@@ -4,7 +4,7 @@
     class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
   >
     <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-sm font-semibold text-gray-700">生涯トータルリターン</h2>
+      <h2 class="text-sm font-semibold text-gray-700">累計損益（含み＋実現＋配当）</h2>
       <p v-if="coverageRange" class="text-xs text-gray-500" data-testid="total-return-coverage">
         集計期間 {{ formatDate(coverageRange.from) }}〜{{ formatDate(coverageRange.to) }}
       </p>
@@ -69,7 +69,7 @@ const props = defineProps<{
 
 const f = useFormatters()
 
-// 生涯トータルリターン合計 = 含み損益 + 実現損益 + 受取配当
+// 累計損益合計 = 含み損益 + 実現損益 + 受取配当
 const total = computed(() => (props.unrealized ?? 0) + props.realized + props.dividend)
 
 // "2026-08-04" → "2026/08/04"
