@@ -138,13 +138,19 @@ const chartOptions = computed(() => ({
       labels: { boxWidth: 12, font: { size: 11 } },
     },
     tooltip: {
+      // 含み益/含み損は面を描くための内部系列なのでツールチップから除外し、
+      // 投下額・累計損益のみ表示。総資産・含み損益は afterBody で補足する。
+      filter: (item: { dataset: { label?: string } }) =>
+        item.dataset.label === '投下額（元本＋現金）' ||
+        item.dataset.label === '累計損益（含み＋実現＋配当）',
       callbacks: {
         label: (ctx: { dataset: { label?: string }; raw: unknown }) =>
           ` ${ctx.dataset.label}: ${fmt(ctx.raw as number)}`,
-        // 含み損益（総資産−投下額）を補足
         afterBody: (items: { dataIndex: number }[]) => {
           const r = rows.value[items[0]?.dataIndex ?? 0]
-          return r ? `含み損益: ${fmt(r.unrealized)}` : ''
+          if (!r) return ''
+          const sign = r.unrealized >= 0 ? '+' : ''
+          return [`総資産: ${fmt(r.total)}`, `含み損益: ${sign}${fmt(r.unrealized)}`]
         },
       },
     },
