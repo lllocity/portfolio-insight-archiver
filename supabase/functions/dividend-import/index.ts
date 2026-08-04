@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 // 配当金・分配金CSV（SBI: DISTRIBUTION_*.csv）取り込み。
 // 範囲リプレース方式: ファイル内の受渡日 min〜max の既存行を削除してから挿入する。
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'

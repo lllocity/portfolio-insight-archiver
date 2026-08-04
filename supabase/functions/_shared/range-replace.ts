@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 // 範囲リプレース取り込みの共通ロジック（realized-import / dividend-import で共用）。
 // 1ファイル分のレコードについて、その日付 min〜max の既存行を削除してから挿入する。
 // ファイル単位で呼ぶことで、複数ファイル間の「間の期間」を誤って削除しない。
@@ -14,6 +13,8 @@ export interface RangeReplaceResult {
 }
 
 export async function rangeReplaceFile<T>(
+  // Supabase クライアントは動的テーブル名のクエリビルダのため any（コードベース慣習に準拠）
+  // deno-lint-ignore no-explicit-any
   supabase: any,
   userId: string,
   opts: {
