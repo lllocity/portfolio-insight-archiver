@@ -3,8 +3,13 @@
     <h1 class="mb-4 text-lg font-bold text-gray-800">ポートフォリオ</h1>
 
     <!-- CSVインポートフォーム -->
-    <div class="mb-6">
+    <div class="mb-4">
       <CsvImportForm @imported="onImported" />
+    </div>
+
+    <!-- 実現損益・配当CSVインポート -->
+    <div class="mb-6">
+      <RealizedDividendImportForm @imported="onTotalReturnImported" />
     </div>
 
     <!-- エラー -->
@@ -56,6 +61,17 @@
         />
       </div>
 
+      <!-- 生涯トータルリターン（含み損益＋実現損益＋受取配当） -->
+      <div class="mb-6">
+        <TotalReturnPanel
+          :unrealized="unrealized"
+          :realized="trStore.lifetime.realizedTotal"
+          :dividend="trStore.lifetime.dividendTotal"
+          :coverage-range="trStore.lifetime.coverageRange"
+          :error="trStore.error"
+        />
+      </div>
+
       <!-- セクターグラフ -->
       <div class="mb-6">
         <SectorChart :sectors="store.data.sectors" />
@@ -74,14 +90,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
+import { useTotalReturnStore } from '@/stores/totalReturnStore'
 import { useFormatters } from '@/composables/useFormatters'
 import CsvImportForm from '@/components/CsvImportForm.vue'
+import RealizedDividendImportForm from '@/components/RealizedDividendImportForm.vue'
 import SummaryCard from '@/components/SummaryCard.vue'
+import TotalReturnPanel from '@/components/TotalReturnPanel.vue'
 import SectorChart from '@/components/SectorChart.vue'
 import HoldingsTable from '@/components/HoldingsTable.vue'
 
 const store = usePortfolioStore()
+const trStore = useTotalReturnStore()
 const f = useFormatters()
+
+// 含み損益（未実現）= 現在スナップショットの総損益
+const unrealized = computed<number | null>(() =>
+  store.data ? parseFloat(store.data.snapshot.totalProfitLoss) : null,
+)
 
 const totalAssets = computed<string>(() => {
   if (!store.data) return '0'
@@ -108,5 +133,9 @@ const dividendYield = computed<string | null>(() => {
 
 async function onImported() {
   await store.reload()
+}
+
+async function onTotalReturnImported() {
+  await trStore.reload()
 }
 </script>

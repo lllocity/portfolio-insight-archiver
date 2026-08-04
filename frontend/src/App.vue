@@ -71,9 +71,11 @@ import { ref, onMounted, watch } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import AppError from '@/components/AppError.vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
+import { useTotalReturnStore } from '@/stores/totalReturnStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const portfolioStore = usePortfolioStore()
+const totalReturnStore = useTotalReturnStore()
 const authStore = useAuthStore()
 const globalError = ref<string | null>(null)
 
@@ -88,6 +90,8 @@ onMounted(async () => {
   if (authStore.user && authStore.isAllowed) {
     await portfolioStore.load()
     if (portfolioStore.error) globalError.value = portfolioStore.error
+    // 副次データ。失敗しても globalError オーバーレイには載せず、パネル内で扱う。
+    void totalReturnStore.load()
   }
 })
 

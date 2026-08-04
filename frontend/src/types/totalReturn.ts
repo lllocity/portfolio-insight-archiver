@@ -29,6 +29,14 @@ export interface LifetimeTotals {
   coverageRange: { from: string; to: string } | null // 取り込み済みデータの集計期間
 }
 
+// realized-import / dividend-import Edge Function のレスポンス型
+export interface ImportRangeResult {
+  success: boolean
+  importedCount: number
+  skipped: number
+  dateRange: { from: string; to: string } | null
+}
+
 // 年ごと（暦年）サマリの1行
 export interface YearlySummaryRow {
   year: number
