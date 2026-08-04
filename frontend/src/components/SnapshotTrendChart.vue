@@ -2,7 +2,7 @@
   <div class="rounded-lg border border-gray-200 bg-white p-4">
     <h3 class="mb-1 text-sm font-semibold text-gray-700">資産・累計損益の推移</h3>
     <p class="mb-3 text-xs text-gray-400">
-      面＝総資産（下地＝投下額＋現金、緑帯＝含み損益）。折れ線＝累計損益（含み＋実現＋配当）。
+      面＝総資産（下地＝投下額＋現金、緑＝含み益／赤＝含み損）。折れ線＝累計損益（含み＋実現＋配当）。
     </p>
     <Chart type="line" :data="chartData" :options="chartOptions" />
   </div>
@@ -78,25 +78,38 @@ const chartData = computed(() => ({
   labels: rows.value.map((r) => r.date),
   datasets: [
     {
-      // 下地: 投下額（元本＋現金）を 0 まで塗る（資産本体＝青）
+      // 下地: 投下額（元本＋現金）を 0 まで塗る（資産本体＝薄いグレーで控えめに）
       label: '投下額（元本＋現金）',
       data: rows.value.map((r) => r.base),
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37,99,235,0.28)',
+      borderColor: '#cbd5e1',
+      backgroundColor: 'rgba(148,163,184,0.16)',
       borderWidth: 1,
       pointRadius: 0,
       fill: 'origin' as const,
       order: 3,
     },
     {
-      // 総資産（絶対値）。下地との間を塗る＝含み損益の帯（緑）。負でも正しく描ける
-      label: '総資産',
-      data: rows.value.map((r) => r.total),
-      borderColor: '#16a34a',
+      // 含み益（緑）: 投下額を上回る分を投下額ライン（index 0）まで塗る。
+      // total<=base（損失）の時は base と一致し帯は消える。
+      label: '含み益',
+      data: rows.value.map((r) => Math.max(r.total, r.base)),
+      borderColor: 'transparent',
       backgroundColor: 'rgba(22,163,74,0.55)',
-      borderWidth: 2,
+      borderWidth: 0,
       pointRadius: 0,
-      fill: '-1' as const,
+      fill: 0 as const,
+      order: 2,
+    },
+    {
+      // 含み損（赤）: 投下額を下回る分を投下額ライン（index 0）まで塗る。
+      // total>=base（利益）の時は base と一致し帯は消える。
+      label: '含み損',
+      data: rows.value.map((r) => Math.min(r.total, r.base)),
+      borderColor: 'transparent',
+      backgroundColor: 'rgba(220,38,38,0.75)',
+      borderWidth: 0,
+      pointRadius: 0,
+      fill: 0 as const,
       order: 2,
     },
     {
