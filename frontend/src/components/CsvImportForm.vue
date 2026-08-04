@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-lg border border-gray-200 bg-white p-4" data-testid="csv-import-form">
-    <h3 class="mb-3 text-sm font-semibold text-gray-700">CSVインポート</h3>
+    <h3 class="mb-3 text-sm font-semibold text-gray-700">ポートフォリオCSVインポート</h3>
     <div class="flex items-center gap-2">
       <label
         class="cursor-pointer rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
