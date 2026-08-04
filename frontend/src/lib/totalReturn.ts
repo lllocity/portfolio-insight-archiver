@@ -1,4 +1,4 @@
-// 生涯トータルリターンの集計（純関数・テスト可能）
+// 累計損益（含み＋実現＋配当）の集計（純関数・テスト可能）
 import type { DividendRow, LifetimeTotals, RealizedPnlRow, YearlySummaryRow } from '@/types/totalReturn'
 
 function yearOf(date: string): number {

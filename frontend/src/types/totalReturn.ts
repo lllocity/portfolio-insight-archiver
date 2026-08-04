@@ -1,4 +1,4 @@
-// 生涯トータルリターン（実現損益・受取配当）関連の型
+// 累計損益（含み＋実現＋配当）関連の型
 // 金額は集計のため number で保持し、表示時に formatter へ渡す。
 
 export interface RealizedPnlRow {
@@ -22,11 +22,19 @@ export interface DividendRow {
   amountNet: number // 税引後
 }
 
-// 生涯トータルリターンの内訳（含み損益は portfolioStore 側から合算する）
+// 累計損益（含み＋実現＋配当）の内訳（含み損益は portfolioStore 側から合算する）
 export interface LifetimeTotals {
   realizedTotal: number // Σ実現損益（税引前）
   dividendTotal: number // Σ受取配当（税引後）
   coverageRange: { from: string; to: string } | null // 取り込み済みデータの集計期間
+}
+
+// realized-import / dividend-import Edge Function のレスポンス型
+export interface ImportRangeResult {
+  success: boolean
+  importedCount: number
+  skipped: number
+  dateRange: { from: string; to: string } | null
 }
 
 // 年ごと（暦年）サマリの1行
