@@ -28,7 +28,7 @@ interface RawRow {
   valuation: string
 }
 
-function parseCsvLine(line: string): string[] {
+export function parseCsvLine(line: string): string[] {
   const result: string[] = []
   let inQuotes = false
   let current = ''
@@ -60,7 +60,7 @@ function resolvePriceColumn(headers: string[]): string | null {
   return null
 }
 
-function parseNumber(raw: string): number {
+export function parseNumber(raw: string): number {
   if (!raw || raw === '-' || raw === '--') return 0
   const cleaned = raw.replace(/,/g, '').replace(/%/g, '').replace(/\+/g, '').trim()
   const n = parseFloat(cleaned)
