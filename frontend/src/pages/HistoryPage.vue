@@ -17,6 +17,11 @@
       <!-- 推移グラフ -->
       <SnapshotTrendChart class="mb-6" :snapshots="snapshots" />
 
+      <!-- 年ごとの確定損益（実現損益＋受取配当・暦年） -->
+      <div class="mb-6">
+        <YearlySummaryTable :rows="trStore.yearly" />
+      </div>
+
       <p class="mb-3 text-xs text-gray-500">
         行をクリックすると保有銘柄を展開します。
       </p>
@@ -134,8 +139,11 @@ import { useFormatters } from '@/composables/useFormatters'
 import type { SnapshotListItem } from '@/types/portfolio'
 import HistoryCompareView from '@/components/HistoryCompareView.vue'
 import SnapshotTrendChart from '@/components/SnapshotTrendChart.vue'
+import YearlySummaryTable from '@/components/YearlySummaryTable.vue'
+import { useTotalReturnStore } from '@/stores/totalReturnStore'
 
 const f = useFormatters()
+const trStore = useTotalReturnStore()
 const snapshots = ref<SnapshotListItem[]>([])
 const loading = ref(false)
 const displayCount = ref(30)
