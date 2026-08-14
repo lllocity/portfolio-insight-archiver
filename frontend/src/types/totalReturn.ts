@@ -51,6 +51,17 @@ export interface YearlySummaryRow {
   year: number
   realizedTotal: number
   dividendTotal: number
-  confirmedTotal: number // realizedTotal + dividendTotal
+  confirmedTotal: number // realizedTotal + dividendTotal（確定分）
+  unrealized: number // 含み損益。当年のみ現在含みを入れる（過去年は 0）
+  totalReturn: number // トータルリターン ＝ confirmedTotal + unrealized
   isCurrentYear: boolean // 当年（YTD・部分期間）か
+}
+
+// 今年の年間トータルリターン（当年実現 ＋ 当年配当 ＋ 現在の含み損益）
+export interface AnnualReturn {
+  year: number
+  unrealized: number // 現在の含み損益（全保有・全額）
+  realizedTotal: number // 当年の実現損益（税引前）
+  dividendTotal: number // 当年の受取配当（税引後）
+  total: number // 合計
 }

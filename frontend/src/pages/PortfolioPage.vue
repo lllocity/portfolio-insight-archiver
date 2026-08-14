@@ -57,13 +57,16 @@
         />
       </div>
 
-      <!-- 累計損益（含み損益＋実現損益＋受取配当） -->
+      <!-- 年間トータルリターン（当年実現＋当年配当＋現在含み） -->
       <div class="mb-6">
         <TotalReturnPanel
-          :unrealized="unrealized"
-          :realized="trStore.lifetime.realizedTotal"
-          :dividend="trStore.lifetime.dividendTotal"
-          :coverage-range="trStore.lifetime.coverageRange"
+          :title="`年間トータルリターン（${currentYear}年）`"
+          :subtitle="`${currentYear}/01/01〜${todayStr} 時点`"
+          note="※含み損益は現在の全保有分です。年初からの含みも含むため、当年の成果としてはやや上振れします。"
+          :unrealized="annual.unrealized"
+          :realized="annual.realizedTotal"
+          :dividend="annual.dividendTotal"
+          :labels="annualLabels"
           :error="trStore.error"
         />
       </div>
@@ -87,6 +90,7 @@
 import { computed } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
 import { useTotalReturnStore } from '@/stores/totalReturnStore'
+import { annualReturn } from '@/lib/totalReturn'
 import { useFormatters } from '@/composables/useFormatters'
 import CsvImportForm from '@/components/CsvImportForm.vue'
 import RealizedDividendImportForm from '@/components/RealizedDividendImportForm.vue'
@@ -103,6 +107,18 @@ const f = useFormatters()
 const unrealized = computed<number | null>(() =>
   store.data ? parseFloat(store.data.snapshot.totalProfitLoss) : null,
 )
+
+// 年間トータルリターン（当年実現＋当年配当＋現在含み）
+const currentYear = new Date().getFullYear()
+const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '/')
+const annual = computed(() =>
+  annualReturn(trStore.realized, trStore.dividends, currentYear, unrealized.value ?? 0),
+)
+const annualLabels = {
+  unrealized: { label: '含み損益（現在）', subValue: '現在の保有分' },
+  realized: { label: '実現損益（当年・税引前）', subValue: '売却で確定' },
+  dividend: { label: '受取配当（当年・税引後）', subValue: '入金済み' },
+}
 
 const totalAssets = computed<string>(() => {
   if (!store.data) return '0'

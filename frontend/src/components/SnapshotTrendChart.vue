@@ -9,8 +9,8 @@
       <Chart type="line" :data="assetData" :options="assetOptions" />
     </div>
 
-    <!-- ② 累計損益の推移（0基準） -->
-    <h3 class="mb-1 text-sm font-semibold text-gray-700">② 累計損益の推移</h3>
+    <!-- ② 生涯トータルリターンの推移（0基準） -->
+    <h3 class="mb-1 text-sm font-semibold text-gray-700">② 生涯トータルリターンの推移</h3>
     <p class="mb-2 text-xs text-gray-400">
       含み＋実現＋配当の累計。0を境にプラス＝緑・マイナス＝赤。（内訳は下の年サマリ表・上部パネル参照）
     </p>
@@ -147,7 +147,7 @@ const perfData = computed(() => ({
   labels: labels.value,
   datasets: [
     {
-      label: '累計損益（含み＋実現＋配当）',
+      label: '生涯トータルリターン（含み＋実現＋配当）',
       data: cumTotals.value,
       borderColor: '#475569',
       borderWidth: 2,
@@ -166,7 +166,7 @@ const perfOptions = computed(() => ({
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (ctx: { raw: unknown }) => ` 累計損益: ${fmt(ctx.raw as number)}`,
+        label: (ctx: { raw: unknown }) => ` 生涯トータルリターン: ${fmt(ctx.raw as number)}`,
       },
     },
   },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cumulativeBreakdownByDate, lifetimeTotals, yearlySummary } from '../totalReturn'
+import { annualReturn, cumulativeBreakdownByDate, lifetimeTotals, yearlySummary } from '../totalReturn'
 import type { DividendRow, RealizedPnlRow } from '@/types/totalReturn'
 
 const realized = (tradeDate: string, realizedPl: number): RealizedPnlRow => ({
@@ -58,6 +58,35 @@ describe('yearlySummary', () => {
     expect(current).toMatchObject({ year: 2026, realizedTotal: 0, dividendTotal: 0, confirmedTotal: 0, isCurrentYear: true })
     // 降順の先頭が当年
     expect(rows[0].year).toBe(2026)
+  })
+
+  it('当年のみ現在含みを totalReturn に足す。過去年は含みなし', () => {
+    const r = [realized('2026-05-29', 100), realized('2025-05-29', 200)]
+    const rows = yearlySummary(r, [], 2026, 900)
+    const y2026 = rows.find((x) => x.year === 2026)!
+    expect(y2026).toMatchObject({ confirmedTotal: 100, unrealized: 900, totalReturn: 1000 })
+    const y2025 = rows.find((x) => x.year === 2025)!
+    expect(y2025).toMatchObject({ confirmedTotal: 200, unrealized: 0, totalReturn: 200 })
+  })
+})
+
+describe('annualReturn', () => {
+  it('当年の実現＋配当＋現在含みを合算する', () => {
+    const r = [realized('2026-05-29', 200_000), realized('2025-12-04', 999_999)]
+    const d = [dividend('2026-06-29', 30_000), dividend('2025-06-16', 888_888)]
+    const res = annualReturn(r, d, 2026, 1_500_000)
+    expect(res).toEqual({
+      year: 2026,
+      unrealized: 1_500_000,
+      realizedTotal: 200_000, // 2025分は除外
+      dividendTotal: 30_000, // 2025分は除外
+      total: 1_730_000,
+    })
+  })
+
+  it('当年データが無くても現在含みは反映する', () => {
+    const res = annualReturn([], [], 2026, 500_000)
+    expect(res).toMatchObject({ realizedTotal: 0, dividendTotal: 0, total: 500_000 })
   })
 })
 

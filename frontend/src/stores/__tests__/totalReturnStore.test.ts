@@ -39,16 +39,6 @@ describe('totalReturnStore', () => {
     expect(store.lifetime.coverageRange).toEqual({ from: '2025-12-04', to: '2026-07-30' })
   })
 
-  it('yearly は当年YTD行を必ず含む', async () => {
-    const currentYear = new Date().getFullYear()
-    mockFetchRealized.mockResolvedValue([realized('2020-01-01', 100)])
-    mockFetchDividends.mockResolvedValue([])
-    const store = useTotalReturnStore()
-    await store.load()
-
-    expect(store.yearly.some((y) => y.year === currentYear && y.isCurrentYear)).toBe(true)
-  })
-
   it('取得失敗時は error をセットする', async () => {
     mockFetchRealized.mockRejectedValue(new Error('実現損益の取得に失敗しました'))
     mockFetchDividends.mockResolvedValue([])
