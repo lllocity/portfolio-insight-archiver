@@ -14,6 +14,20 @@
     </div>
 
     <template v-else>
+      <!-- 生涯トータルリターン（全実現＋全配当＋現在含み） -->
+      <div class="mb-6">
+        <TotalReturnPanel
+          title="生涯トータルリターン"
+          :subtitle="lifetimeSubtitle"
+          note="※「通算」は取り込み開始以降の集計です。含み損益は現在の全保有分。"
+          :unrealized="currentUnrealized"
+          :realized="trStore.lifetime.realizedTotal"
+          :dividend="trStore.lifetime.dividendTotal"
+          :labels="lifetimeLabels"
+          :error="trStore.error"
+        />
+      </div>
+
       <!-- 推移グラフ -->
       <SnapshotTrendChart
         class="mb-6"
@@ -22,9 +36,9 @@
         :dividends="trStore.dividends"
       />
 
-      <!-- 年ごとの確定損益（実現損益＋受取配当・暦年） -->
+      <!-- 年ごとのトータルリターン（暦年） -->
       <div class="mb-6">
-        <YearlySummaryTable :rows="trStore.yearly" />
+        <YearlySummaryTable :rows="yearly" />
       </div>
 
       <p class="mb-3 text-xs text-gray-500">
@@ -145,10 +159,36 @@ import type { SnapshotListItem } from '@/types/portfolio'
 import HistoryCompareView from '@/components/HistoryCompareView.vue'
 import SnapshotTrendChart from '@/components/SnapshotTrendChart.vue'
 import YearlySummaryTable from '@/components/YearlySummaryTable.vue'
+import TotalReturnPanel from '@/components/TotalReturnPanel.vue'
 import { useTotalReturnStore } from '@/stores/totalReturnStore'
+import { usePortfolioStore } from '@/stores/portfolioStore'
+import { yearlySummary } from '@/lib/totalReturn'
 
 const f = useFormatters()
 const trStore = useTotalReturnStore()
+const portfolioStore = usePortfolioStore()
+
+// 現在の含み損益（最新スナップショット）＝ App.vue で既にロード済み
+const currentUnrealized = computed<number | null>(() =>
+  portfolioStore.data ? parseFloat(portfolioStore.data.snapshot.totalProfitLoss) : null,
+)
+
+// 年次サマリ（当年のみ現在含みを反映）
+const yearly = computed(() =>
+  yearlySummary(trStore.realized, trStore.dividends, new Date().getFullYear(), currentUnrealized.value ?? 0),
+)
+
+// 生涯パネル用
+const lifetimeLabels = {
+  unrealized: { label: '含み損益（現在）', subValue: '現在の保有分' },
+  realized: { label: '実現損益（通算・税引前）', subValue: '売却で確定' },
+  dividend: { label: '受取配当（通算・税引後）', subValue: '入金済み' },
+}
+const lifetimeSubtitle = computed(() => {
+  const c = trStore.lifetime.coverageRange
+  return c ? `実現・配当の集計期間 ${c.from.replace(/-/g, '/')}〜${c.to.replace(/-/g, '/')}` : ''
+})
+
 const snapshots = ref<SnapshotListItem[]>([])
 const loading = ref(false)
 const displayCount = ref(30)

@@ -1,5 +1,6 @@
 // 累計損益（含み＋実現＋配当）の集計（純関数・テスト可能）
 import type {
+  AnnualReturn,
   CumulativeBreakdownPoint,
   DividendRow,
   LifetimeTotals,
@@ -9,6 +10,27 @@ import type {
 
 function yearOf(date: string): number {
   return parseInt(date.slice(0, 4), 10)
+}
+
+/**
+ * 今年の年間トータルリターン ＝ 当年の実現損益 ＋ 当年の受取配当 ＋ 現在の含み損益(全額)。
+ * ※現在含みを全額入れるため、年初からの含み分だけ上振れする（合意済みの割り切り）。
+ */
+export function annualReturn(
+  realized: RealizedPnlRow[],
+  dividends: DividendRow[],
+  currentYear: number,
+  currentUnrealized: number,
+): AnnualReturn {
+  const realizedTotal = realized.reduce((s, r) => s + (yearOf(r.tradeDate) === currentYear ? r.realizedPl : 0), 0)
+  const dividendTotal = dividends.reduce((s, d) => s + (yearOf(d.payDate) === currentYear ? d.amountNet : 0), 0)
+  return {
+    year: currentYear,
+    unrealized: currentUnrealized,
+    realizedTotal,
+    dividendTotal,
+    total: currentUnrealized + realizedTotal + dividendTotal,
+  }
 }
 
 /**
@@ -59,12 +81,15 @@ export function lifetimeTotals(
 /**
  * 暦年（1/1〜12/31）ごとに実現損益・受取配当を集計する。
  * 当年（currentYear）は該当データが無くても必ず1行含める（YTD 0表示）。
+ * 過去年は確定分（実現＋配当）のみ。当年のみ現在含み（currentUnrealized）を足して
+ * トータルリターンとする（前年末含みが取れないため過去年は含みなし）。
  * 降順（新しい年が上）で返す。
  */
 export function yearlySummary(
   realized: RealizedPnlRow[],
   dividends: DividendRow[],
   currentYear: number,
+  currentUnrealized = 0,
 ): YearlySummaryRow[] {
   const map = new Map<number, { realized: number; dividend: number }>()
   const bucket = (year: number) => {
@@ -78,12 +103,19 @@ export function yearlySummary(
   bucket(currentYear) // 当年は必ず1行（YTD）
 
   return [...map.entries()]
-    .map(([year, e]) => ({
-      year,
-      realizedTotal: e.realized,
-      dividendTotal: e.dividend,
-      confirmedTotal: e.realized + e.dividend,
-      isCurrentYear: year === currentYear,
-    }))
+    .map(([year, e]) => {
+      const confirmedTotal = e.realized + e.dividend
+      const isCurrentYear = year === currentYear
+      const unrealized = isCurrentYear ? currentUnrealized : 0
+      return {
+        year,
+        realizedTotal: e.realized,
+        dividendTotal: e.dividend,
+        confirmedTotal,
+        unrealized,
+        totalReturn: confirmedTotal + unrealized,
+        isCurrentYear,
+      }
+    })
     .sort((a, b) => b.year - a.year)
 }

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { fetchDividends, fetchRealizedPnl } from '@/api/totalReturnApi'
-import { lifetimeTotals, yearlySummary } from '@/lib/totalReturn'
+import { lifetimeTotals } from '@/lib/totalReturn'
 import type { DividendRow, RealizedPnlRow } from '@/types/totalReturn'
 
 export const useTotalReturnStore = defineStore('totalReturn', () => {
@@ -29,8 +29,9 @@ export const useTotalReturnStore = defineStore('totalReturn', () => {
   // 取り込み後の再取得
   const reload = load
 
+  // 生涯（取り込み開始以降の通算）の実現・配当合計。含みは呼び出し側で合算。
+  // 年次サマリは現在含みが必要なためページ側で算出する（store には置かない）。
   const lifetime = computed(() => lifetimeTotals(realized.value, dividends.value))
-  const yearly = computed(() => yearlySummary(realized.value, dividends.value, new Date().getFullYear()))
 
-  return { realized, dividends, loading, error, loaded, load, reload, lifetime, yearly }
+  return { realized, dividends, loading, error, loaded, load, reload, lifetime }
 })
