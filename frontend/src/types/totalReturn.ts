@@ -37,6 +37,15 @@ export interface ImportRangeResult {
   dateRange: { from: string; to: string } | null
 }
 
+// 各スナップショット日時点の累計損益の内訳（含み／実現累計／配当累計）
+export interface CumulativeBreakdownPoint {
+  date: string
+  unrealized: number // 含み損益(t)
+  realizedCum: number // Σ実現損益(≤t)
+  dividendCum: number // Σ受取配当(≤t)
+  total: number // 累計損益 ＝ 上3つの合計
+}
+
 // 年ごと（暦年）サマリの1行
 export interface YearlySummaryRow {
   year: number

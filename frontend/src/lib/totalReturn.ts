@@ -1,27 +1,37 @@
 // 累計損益（含み＋実現＋配当）の集計（純関数・テスト可能）
-import type { DividendRow, LifetimeTotals, RealizedPnlRow, YearlySummaryRow } from '@/types/totalReturn'
+import type {
+  CumulativeBreakdownPoint,
+  DividendRow,
+  LifetimeTotals,
+  RealizedPnlRow,
+  YearlySummaryRow,
+} from '@/types/totalReturn'
 
 function yearOf(date: string): number {
   return parseInt(date.slice(0, 4), 10)
 }
 
 /**
- * 各スナップショット日時点の累計トータルリターンを算出する。
- *   累計リターン(t) = 含み損益(t) + Σ実現損益(約定日 ≤ t) + Σ受取配当(受渡日 ≤ t)
- * 日付は 'YYYY-MM-DD' 前提（辞書順比較＝時系列比較）。返り値は snapshotDate → 金額。
+ * 各スナップショット日時点の累計損益を「含み／実現累計／配当累計」の内訳で算出する。
+ *   含み損益(t) ＋ Σ実現損益(約定日 ≤ t) ＋ Σ受取配当(受渡日 ≤ t) ＝ 累計損益(t)
+ * 日付は 'YYYY-MM-DD' 前提（辞書順比較＝時系列比較）。snapshots の順序を保って返す。
  */
-export function cumulativeReturnByDate(
+export function cumulativeBreakdownByDate(
   snapshots: { snapshotDate: string; unrealized: number }[],
   realized: RealizedPnlRow[],
   dividends: DividendRow[],
-): Record<string, number> {
-  const result: Record<string, number> = {}
-  for (const s of snapshots) {
-    const rSum = realized.reduce((acc, r) => acc + (r.tradeDate <= s.snapshotDate ? r.realizedPl : 0), 0)
-    const dSum = dividends.reduce((acc, d) => acc + (d.payDate <= s.snapshotDate ? d.amountNet : 0), 0)
-    result[s.snapshotDate] = s.unrealized + rSum + dSum
-  }
-  return result
+): CumulativeBreakdownPoint[] {
+  return snapshots.map((s) => {
+    const realizedCum = realized.reduce((acc, r) => acc + (r.tradeDate <= s.snapshotDate ? r.realizedPl : 0), 0)
+    const dividendCum = dividends.reduce((acc, d) => acc + (d.payDate <= s.snapshotDate ? d.amountNet : 0), 0)
+    return {
+      date: s.snapshotDate,
+      unrealized: s.unrealized,
+      realizedCum,
+      dividendCum,
+      total: s.unrealized + realizedCum + dividendCum,
+    }
+  })
 }
 
 /**
