@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cumulativeReturnByDate, lifetimeTotals, yearlySummary } from '../totalReturn'
+import { cumulativeBreakdownByDate, lifetimeTotals, yearlySummary } from '../totalReturn'
 import type { DividendRow, RealizedPnlRow } from '@/types/totalReturn'
 
 const realized = (tradeDate: string, realizedPl: number): RealizedPnlRow => ({
@@ -61,30 +61,30 @@ describe('yearlySummary', () => {
   })
 })
 
-describe('cumulativeReturnByDate', () => {
-  it('各スナップショット時点の 含み＋実現累計＋配当累計 を返す', () => {
+describe('cumulativeBreakdownByDate', () => {
+  it('各スナップショット時点の 含み／実現累計／配当累計 と合計を返す', () => {
     const snaps = [
       { snapshotDate: '2026-04-30', unrealized: 1_000_000 },
       { snapshotDate: '2026-06-30', unrealized: 1_500_000 },
     ]
     const r = [realized('2026-05-29', 200_000), realized('2026-06-17', -80_000)]
     const d = [dividend('2026-06-29', 30_000)]
-    const res = cumulativeReturnByDate(snaps, r, d)
+    const res = cumulativeBreakdownByDate(snaps, r, d)
 
     // 4/30時点: 実現・配当はまだ無い → 含みのみ
-    expect(res['2026-04-30']).toBe(1_000_000)
-    // 6/30時点: 含み150万 + 実現(20万-8万=12万) + 配当3万 = 1,650,000
-    expect(res['2026-06-30']).toBe(1_650_000)
+    expect(res[0]).toEqual({ date: '2026-04-30', unrealized: 1_000_000, realizedCum: 0, dividendCum: 0, total: 1_000_000 })
+    // 6/30時点: 含み150万 + 実現(20万-8万=12万) + 配当3万
+    expect(res[1]).toEqual({ date: '2026-06-30', unrealized: 1_500_000, realizedCum: 120_000, dividendCum: 30_000, total: 1_650_000 })
   })
 
   it('約定日・受渡日がスナップショット日と同日なら含める（≤）', () => {
-    const snaps = [{ snapshotDate: '2026-05-29', unrealized: 0 }]
-    const res = cumulativeReturnByDate(snaps, [realized('2026-05-29', 100)], [dividend('2026-05-29', 50)])
-    expect(res['2026-05-29']).toBe(150)
+    const res = cumulativeBreakdownByDate([{ snapshotDate: '2026-05-29', unrealized: 0 }], [realized('2026-05-29', 100)], [dividend('2026-05-29', 50)])
+    expect(res[0]).toMatchObject({ realizedCum: 100, dividendCum: 50, total: 150 })
   })
 
-  it('実現・配当が無ければ含み損益に一致する', () => {
-    const snaps = [{ snapshotDate: '2026-04-30', unrealized: 500_000 }]
-    expect(cumulativeReturnByDate(snaps, [], [])['2026-04-30']).toBe(500_000)
+  it('スナップショットの順序を保持する', () => {
+    const snaps = [{ snapshotDate: '2026-06-30', unrealized: 2 }, { snapshotDate: '2026-04-30', unrealized: 1 }]
+    const res = cumulativeBreakdownByDate(snaps, [], [])
+    expect(res.map((x) => x.date)).toEqual(['2026-06-30', '2026-04-30'])
   })
 })
