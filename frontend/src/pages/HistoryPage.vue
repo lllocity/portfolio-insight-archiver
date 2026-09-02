@@ -41,6 +41,9 @@
         <YearlySummaryTable :rows="yearly" />
       </div>
 
+      <!-- 日次騰落率ランキング -->
+      <DailyChangeRanking class="mb-6" />
+
       <p class="mb-3 text-xs text-gray-500">
         行をクリックすると保有銘柄を展開します。
       </p>
@@ -159,6 +162,7 @@ import type { SnapshotListItem } from '@/types/portfolio'
 import HistoryCompareView from '@/components/HistoryCompareView.vue'
 import SnapshotTrendChart from '@/components/SnapshotTrendChart.vue'
 import YearlySummaryTable from '@/components/YearlySummaryTable.vue'
+import DailyChangeRanking from '@/components/DailyChangeRanking.vue'
 import TotalReturnPanel from '@/components/TotalReturnPanel.vue'
 import { useTotalReturnStore } from '@/stores/totalReturnStore'
 import { usePortfolioStore } from '@/stores/portfolioStore'
