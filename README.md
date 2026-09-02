@@ -72,6 +72,7 @@ npm run dev
 | `snapshot-holdings` | 特定日付のスナップショット保有一覧 |
 | `snapshot-sectors` | 特定日付のセクター集計 |
 | `snapshot-diff` | 2スナップショット間の差分 |
+| `daily-change-ranking` | 各スナップショット日の前日比騰落率／騰落幅（株式のみ・評価額加重） |
 | `prompt-latest` | AIプロンプト生成 |
 | `dividend-refresh` | 配当情報のスクレイピング更新 |
 
