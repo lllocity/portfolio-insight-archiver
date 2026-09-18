@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; [ -z \"$f\" ] && exit 0; case \"$f\" in */supabase/functions/*.ts) command -v deno >/dev/null 2>&1 || exit 0; out=$(deno check \"$f\" 2>&1) || { echo \"$out\" >&2; exit 2; } ;; esac; }",
+            "statusMessage": "deno check (Edge Function)",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

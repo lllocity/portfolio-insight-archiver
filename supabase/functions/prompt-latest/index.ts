@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       supabase.from('stock_meta_cache').select('*').in('ticker_code', tickerCodes),
       supabase.from('stock_memo').select('*').eq('user_id', user.id).in('ticker_code', tickerCodes),
       previous
-        ? supabase.from('holdings').select('ticker_code, total_quantity, total_valuation').eq('snapshot_id', previous.id)
+        ? supabase.from('holdings').select('ticker_code, total_quantity, total_valuation, total_profit_loss_pct').eq('snapshot_id', previous.id)
         : Promise.resolve({ data: [] }),
     ])
 
@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
       sb += `| 総資産 | ¥${JPY.format(latest.total_valuation + cashBalance)} |\n`
     }
     sb += `| 総損益 | ${fmtPl(latest.total_profit_loss)}（${fmtPct(parseFloat(latest.total_profit_loss_pct))}） |\n`
+    if (previous) {
+      sb += `| 前回スナップショット | ${previous.snapshot_date}（総損益 ${fmtPl(previous.total_profit_loss)}／${fmtPct(parseFloat(previous.total_profit_loss_pct))}） |\n`
+    }
     sb += `| 保有銘柄数 | ${latest.holding_count}銘柄 |\n`
     sb += `| セクター数 | ${sectorMap.size}業種 |\n`
     if (totalDividend > 0) {
@@ -108,12 +111,13 @@ Deno.serve(async (req) => {
 
     // Section 2
     sb += '## 2. 保有銘柄・指標データ\n\n'
-    sb += '| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) | 年間配当額(円) | 支払い月 |\n'
-    sb += '|---|---|---|---|---|---|---|---|\n'
+    sb += '| 銘柄コード | 企業名 | セクター | 数量 | 評価額(円) | 損益率(%) | 前回損益率(%) | 年間配当額(円) | 支払い月 |\n'
+    sb += '|---|---|---|---|---|---|---|---|---|\n'
     for (const { h, meta, sectorName, annualDiv } of enriched) {
       sb += `| ${h.ticker_code} | ${meta?.company_name ?? '-'} | ${sectorName} | `
       sb += `${h.total_quantity} | ${JPY.format(h.total_valuation)} | `
       sb += `${h.total_profit_loss_pct} | `
+      sb += `${prevMap[h.ticker_code]?.total_profit_loss_pct ?? '新規'} | `
       sb += `${annualDiv > 0 ? JPY.format(Math.round(annualDiv)) : '-'} | `
       sb += `${meta?.dividend_months ?? '-'} |\n`
     }
@@ -172,11 +176,12 @@ Deno.serve(async (req) => {
     sb += '## 7. 分析依頼\n\n以下の観点から分析・アドバイスをお願いします:\n\n'
     sb += '- [ ] 現在のポートフォリオの総合評価\n'
     sb += '- [ ] 買い増しを検討すべき銘柄とその理由\n'
-    sb += '- [ ] 整理・売却を検討すべき銘柄とその理由（機会コスト比較含む）\n'
+    sb += '- [ ] 整理・売却を検討すべき銘柄とその理由\n'
     sb += '- [ ] セクター偏りへの指摘と改善提案\n'
     sb += '- [ ] 投資方針に合致しているかの評価\n'
-    sb += '- [ ] 配当収入の評価（配当利回り水準・月別支払い分散の偏り）\n'
+    sb += '- [ ] 配当収入の評価（配当利回り水準・全体目標3.0%への到達度）\n'
     sb += '- [ ] 配当の観点から買い増し・整理を検討すべき銘柄\n'
+    sb += '- [ ] 押し目買いトリガーの到達・トレーリング整理サインの点灯・テーマ仮説の変化など、次の売買判断に直結する観点\n'
     sb += '- [ ] その他：（自由記入）\n\n'
 
     // Section 8

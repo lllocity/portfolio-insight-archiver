@@ -22,3 +22,6 @@ frontend/.vite/
 
 # Supabase
 supabase/.temp/
+
+# Claude Code (local, machine-specific)
+.claude/settings.local.json
