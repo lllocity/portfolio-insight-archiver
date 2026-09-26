@@ -127,6 +127,6 @@ describe('PortfolioPage - cashBalance', () => {
     } as never)
 
     const wrapper = mount(PortfolioPage, { global: { stubs: { CsvImportForm: true, SectorChart: true, HoldingsTable: true } } })
-    expect(wrapper.text()).toContain('配当利回り 2.00%')
+    expect(wrapper.text()).toContain('配当利回り（投信除く） 2.00%')
   })
 })

@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     if (totalDividend > 0) {
       sb += `| 年間配当合計（予想） | ¥${JPY.format(Math.round(totalDividend))} |\n`
       if (yieldBase > 0) {
-        sb += `| 配当利回り（予想） | ${(totalDividend / yieldBase * 100).toFixed(2)}% |\n`
+        sb += `| 配当利回り（予想・投信除く） | ${(totalDividend / yieldBase * 100).toFixed(2)}% |\n`
       }
     }
     sb += '\n'

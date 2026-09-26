@@ -145,7 +145,7 @@ const dividendYield = computed<string | null>(() => {
   const base = parseFloat(totalAssets.value) - fundValuation
   if (base <= 0) return null
   const pct = (parseFloat(totalAnnualDividend.value) / base * 100).toFixed(2)
-  return `配当利回り ${pct}%`
+  return `配当利回り（投信除く） ${pct}%`
 })
 
 async function onImported() {
