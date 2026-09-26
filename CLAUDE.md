@@ -36,6 +36,13 @@ SBI証券のCSVデータをインポートし、ポートフォリオの推移�
 - `user_id UUID` をユーザー固有データのテーブルに付与（snapshots, holdings, stock_memo, settings）
 - `stock_meta_cache` は市場データキャッシュのため全ユーザー共有（user_id なし）
 - DBマイグレーションは `supabase/migrations/` で管理
+- **マイグレーションの適用は SQL の直接実行で行う**（`npx supabase db query --linked -f supabase/migrations/NNN_xxx.sql`）。リモートのマイグレーション履歴は空のため、`supabase db push` は 001 から再実行しようとして壊れる。使用禁止
+
+## データ取得・集計の方針（行数増加への備え）
+- PostgREST は1リクエストの返却行数に上限（max_rows、既定1000行）があり、**超過分はエラーにならず黙って切り捨てられる**
+- 行数が増え続けるテーブル（snapshots / holdings / realized_pnl / dividends）を全件取得する場合は、フロントは `frontend/src/lib/fetchAll.ts` の `fetchAll` を使う（`.range()` を付けないクエリを返す関数を渡す。範囲指定は `fetchAll` が行う）。並び順は必ず一意にする（同一日付が複数行あり得るテーブルは `id` を第2ソートキーに）
+- 大量行を Edge Function に転送して集計しない。集計は DB 関数（`SECURITY INVOKER` ＋ `auth.uid()` で自ユーザーに限定、anon には `EXECUTE` を付与しない）で行い、結果が1000行を超え得る場合はスカラー（jsonb 配列）で返す（例: `007_daily_change_by_snapshot.sql`）
+- 株式／投資信託の判定は証券コード形式（`isStockCode`）で行う。定義は `frontend/src/lib/assetType.ts`・`supabase/functions/_shared/asset-type.ts`・`007` の SQL 関数の3箇所にあり、変更時は全て揃える
 
 ## ディレクトリ構成
 ```

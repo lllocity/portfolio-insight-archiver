@@ -72,7 +72,7 @@ npm run dev
 | `snapshot-holdings` | 特定日付のスナップショット保有一覧 |
 | `snapshot-sectors` | 特定日付のセクター集計 |
 | `snapshot-diff` | 2スナップショット間の差分 |
-| `daily-change-ranking` | 各スナップショット日の前日比騰落率／騰落幅（株式のみ・評価額加重） |
+| `daily-change-ranking` | 各スナップショット日の前日比騰落率／騰落幅（株式のみ・評価額加重）。集計は DB 関数 `daily_change_by_snapshot` で実施 |
 | `prompt-latest` | AIプロンプト生成 |
 | `dividend-refresh` | 配当情報のスクレイピング更新 |
 
@@ -80,6 +80,27 @@ npm run dev
 # Edge Functions のローカル実行
 npx supabase functions serve
 ```
+
+## DB 関数
+
+| 関数 | 説明 |
+|---|---|
+| `daily_change_by_snapshot()` | スナップショット日ごとの株式部分の騰落幅・前日評価額を jsonb 配列で返す（呼び出しユーザー分のみ・`authenticated` のみ実行可） |
+
+## DB マイグレーションの適用
+
+リモートのマイグレーション履歴は管理していないため、`supabase db push` は使わず SQL を直接実行して適用します。
+
+```bash
+npx supabase db query --linked -f supabase/migrations/007_daily_change_by_snapshot.sql
+```
+
+## データ取得の注意（PostgREST の返却行数上限）
+
+PostgREST は1リクエストあたりの返却行数に上限（既定 1000 行）があり、超過分は黙って切り捨てられます。
+
+- 増え続けるテーブルの全件取得は `frontend/src/lib/fetchAll.ts` でページング取得する（スナップショット一覧・実現損益・受取配当）
+- 大量行の集計は Edge Function に転送せず DB 関数で行う（日次騰落率ランキング）
 
 ## 開発コマンド
 
