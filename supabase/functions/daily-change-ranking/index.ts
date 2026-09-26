@@ -2,8 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/cors.ts'
 
 // スナップショット日ごとの株式部分の騰落幅／前日評価額は DB 関数 daily_change_by_snapshot
-// （supabase/migrations/007）で集計する。holdings を全件転送して集計すると履歴の増加に
-// 比例して重くなるため。投資信託の除外・分母0の除外・日付降順も関数側で行う。
+// （supabase/migrations/007・008）で集計する。holdings を全件転送して集計すると履歴の増加に
+// 比例して重くなるため。関数は集計・絞り込みのみで、投資信託の除外は取り込み時に判定済みの
+// holdings.is_stock で行う（判定ルールは _shared/asset-type.ts）。分母0の除外・日付降順も関数側。
 interface SnapshotChange {
   snapshotDate: string
   changeAmount: number

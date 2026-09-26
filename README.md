@@ -67,7 +67,7 @@ npm run dev
 
 | Function | 説明 |
 |---|---|
-| `csv-import` | SBI証券CSVのパース・スナップショット保存 |
+| `csv-import` | SBI証券CSVのパース・スナップショット保存（銘柄ごとに株式／投資信託を判定し `holdings.is_stock` に保存） |
 | `portfolio-latest` | 最新スナップショットの保有状況・セクター集計 |
 | `snapshot-holdings` | 特定日付のスナップショット保有一覧 |
 | `snapshot-sectors` | 特定日付のセクター集計 |
@@ -85,14 +85,16 @@ npx supabase functions serve
 
 | 関数 | 説明 |
 |---|---|
-| `daily_change_by_snapshot()` | スナップショット日ごとの株式部分の騰落幅・前日評価額を jsonb 配列で返す（呼び出しユーザー分のみ・`authenticated` のみ実行可） |
+| `daily_change_by_snapshot()` | スナップショット日ごとの株式部分（`holdings.is_stock`）の騰落幅・前日評価額を jsonb 配列で返す（呼び出しユーザー分のみ・`authenticated` のみ実行可） |
+
+DB 関数は集計・絞り込みのみに限定し、判定ルールや計算式は TypeScript 側に置く方針です（詳細は CLAUDE.md「DB 関数の線引き」）。
 
 ## DB マイグレーションの適用
 
 リモートのマイグレーション履歴は管理していないため、`supabase db push` は使わず SQL を直接実行して適用します。
 
 ```bash
-npx supabase db query --linked -f supabase/migrations/007_daily_change_by_snapshot.sql
+npx supabase db query --linked -f supabase/migrations/NNN_xxx.sql
 ```
 
 ## データ取得の注意（PostgREST の返却行数上限）

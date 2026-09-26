@@ -2,6 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/cors.ts'
 import { parseCsv } from '../_shared/csv-parser.ts'
+import { toHoldingRow } from '../_shared/holdings-row.ts'
 import { fetchAndCacheJQuantsMetadata } from '../_shared/jquants.ts'
 
 Deno.serve(async (req) => {
@@ -70,19 +71,7 @@ Deno.serve(async (req) => {
     await supabase.from('holdings').delete().eq('snapshot_id', (snapshot as any).id)
 
     const { error: holdingsError } = await supabase.from('holdings').insert(
-      records.map((r) => ({
-        user_id: user.id,
-        snapshot_id: (snapshot as any).id,
-        ticker_code: r.tickerCode,
-        total_quantity: r.totalQuantity,
-        weighted_avg_purchase_price: r.weightedAvgPurchasePrice,
-        current_price: r.currentPrice,
-        daily_change: r.dailyChange,
-        daily_change_pct: r.dailyChangePct,
-        total_profit_loss: Math.round(r.totalProfitLoss),
-        total_profit_loss_pct: r.totalProfitLossPct,
-        total_valuation: Math.round(r.totalValuation),
-      })),
+      records.map((r) => toHoldingRow(r, user.id, (snapshot as any).id)),
     )
     if (holdingsError) throw holdingsError
 

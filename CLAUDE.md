@@ -41,8 +41,19 @@ SBI証券のCSVデータをインポートし、ポートフォリオの推移�
 ## データ取得・集計の方針（行数増加への備え）
 - PostgREST は1リクエストの返却行数に上限（max_rows、既定1000行）があり、**超過分はエラーにならず黙って切り捨てられる**
 - 行数が増え続けるテーブル（snapshots / holdings / realized_pnl / dividends）を全件取得する場合は、フロントは `frontend/src/lib/fetchAll.ts` の `fetchAll` を使う（`.range()` を付けないクエリを返す関数を渡す。範囲指定は `fetchAll` が行う）。並び順は必ず一意にする（同一日付が複数行あり得るテーブルは `id` を第2ソートキーに）
-- 大量行を Edge Function に転送して集計しない。集計は DB 関数（`SECURITY INVOKER` ＋ `auth.uid()` で自ユーザーに限定、anon には `EXECUTE` を付与しない）で行い、結果が1000行を超え得る場合はスカラー（jsonb 配列）で返す（例: `007_daily_change_by_snapshot.sql`）
-- 株式／投資信託の判定は証券コード形式（`isStockCode`）で行う。定義は `frontend/src/lib/assetType.ts`・`supabase/functions/_shared/asset-type.ts`・`007` の SQL 関数の3箇所にあり、変更時は全て揃える
+- 株式／投資信託の判定は証券コード形式（`isStockCode`）で行う。定義は `frontend/src/lib/assetType.ts`・`supabase/functions/_shared/asset-type.ts` の2箇所（変更時は両方を揃える）。holdings には取り込み時に判定結果を `is_stock` 列として保存しており、ルールを変えた場合は既存行も新規マイグレーションで再設定する（`008` 参照）
+
+## DB 関数の線引き
+ロジックは原則 TypeScript（Edge Functions / フロント）に置く。DB 関数はテストが書けず障害の追跡も難しいため、**「大量行を DB の外へ運ぶこと自体が問題になる単純な集計」に限って**使う。
+
+| DB 関数に置いてよいもの | TypeScript に置くもの |
+|---|---|
+| 集合の集計（SUM / COUNT / GROUP BY）、列による絞り込み | 判定ルール（株式か否か等）、計算式、丸め、表示用の整形 |
+| 整合性の保証（制約・RLS） | 条件分岐のある処理、外部 API 連携 |
+
+- 判定ルールが集計に必要なときは、SQL に書かず、取り込み時に TypeScript で判定した結果を列として保存し、SQL はその列で絞り込む（例: `holdings.is_stock`）
+- DB 関数は `SECURITY INVOKER` ＋ `auth.uid()` で自ユーザーに限定し、anon には `EXECUTE` を付与しない。結果が1000行を超え得る場合はスカラー（jsonb 配列）で返す（例: `daily_change_by_snapshot`）
+- DB 関数を追加・変更した場合は、自動テストの代わりとなる検証方法（本番画面での変更前後比較など）を実施し、PR やコミットに記録する
 
 ## ディレクトリ構成
 ```
