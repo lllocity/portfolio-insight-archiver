@@ -102,4 +102,31 @@ describe('PortfolioPage - cashBalance', () => {
     const wrapper = mount(PortfolioPage, { global: { stubs: { CsvImportForm: true, SectorChart: true, HoldingsTable: true } } })
     expect(wrapper.text()).toContain('2.50%')
   })
+
+  it('配当利回りの分母から投資信託の評価額を除く', async () => {
+    const { usePortfolioStore } = await import('@/stores/portfolioStore')
+    // 株式 2,000,000 + 投信 1,000,000 + 現金 1,000,000 = 総資産 4,000,000
+    // 分母 = 4,000,000 − 投信 1,000,000 = 3,000,000、年間配当 60,000 → 利回り 2.00%
+    const data = makePortfolioData('3000000', '1000000', '60000')
+    data.holdings[0].totalValuation = '2000000'
+    data.holdings.push({
+      ...data.holdings[0],
+      tickerCode: 'eMAXIS Slim 全世界株式(オール・カントリー)',
+      companyName: null,
+      sectorName: '投資信託',
+      totalValuation: '1000000',
+      estimatedAnnualDividend: null,
+      dividendMonths: null,
+    })
+    vi.mocked(usePortfolioStore).mockReturnValue({
+      data,
+      loading: false,
+      error: null,
+      load: vi.fn(),
+      reload: vi.fn(),
+    } as never)
+
+    const wrapper = mount(PortfolioPage, { global: { stubs: { CsvImportForm: true, SectorChart: true, HoldingsTable: true } } })
+    expect(wrapper.text()).toContain('配当利回り 2.00%')
+  })
 })

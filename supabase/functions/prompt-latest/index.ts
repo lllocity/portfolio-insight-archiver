@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/cors.ts'
+import { isStockCode } from '../_shared/asset-type.ts'
 
 const JPY = new Intl.NumberFormat('ja-JP')
 
@@ -68,13 +69,16 @@ Deno.serve(async (req) => {
     const sectorMap = new Map<string, number>()
     let totalValuation = 0
     let totalDividend = 0
+    let fundValuation = 0
 
     const enriched = ((holdings as any[]) ?? []).map((h) => {
       const meta = metaMap[h.ticker_code]
-      const sectorName = meta?.sector33_name ?? (/^\d{3}[0-9A-Z]$/.test(h.ticker_code) ? '不明' : '投資信託')
+      const isStock = isStockCode(h.ticker_code)
+      const sectorName = meta?.sector33_name ?? (isStock ? '不明' : '投資信託')
       const val = parseFloat(h.total_valuation)
       sectorMap.set(sectorName, (sectorMap.get(sectorName) ?? 0) + val)
       totalValuation += val
+      if (!isStock) fundValuation += val
       const annualDiv = meta?.annual_dividend_per_share != null
         ? parseFloat(meta.annual_dividend_per_share) * parseFloat(h.total_quantity)
         : 0
@@ -102,10 +106,13 @@ Deno.serve(async (req) => {
     }
     sb += `| 保有銘柄数 | ${latest.holding_count}銘柄 |\n`
     sb += `| セクター数 | ${sectorMap.size}業種 |\n`
+    // 分母 = 総資産 − 投資信託評価額（投信は配当データを持たず分子に入らないため分母からも除く）
+    const yieldBase = totalAssets - fundValuation
     if (totalDividend > 0) {
-      const yld = (totalDividend / totalAssets * 100).toFixed(2)
       sb += `| 年間配当合計（予想） | ¥${JPY.format(Math.round(totalDividend))} |\n`
-      sb += `| 配当利回り（予想） | ${yld}% |\n`
+      if (yieldBase > 0) {
+        sb += `| 配当利回り（予想） | ${(totalDividend / yieldBase * 100).toFixed(2)}% |\n`
+      }
     }
     sb += '\n'
 

@@ -91,6 +91,7 @@ import { computed } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolioStore'
 import { useTotalReturnStore } from '@/stores/totalReturnStore'
 import { annualReturn } from '@/lib/totalReturn'
+import { isStockCode } from '@/lib/assetType'
 import { useFormatters } from '@/composables/useFormatters'
 import CsvImportForm from '@/components/CsvImportForm.vue'
 import RealizedDividendImportForm from '@/components/RealizedDividendImportForm.vue'
@@ -135,11 +136,15 @@ const totalAnnualDividend = computed<string | null>(() => {
   return total > 0 ? total.toString() : null
 })
 
+// 分母 = 総資産 − 投資信託評価額（投信は配当データを持たず分子に入らないため分母からも除く）
 const dividendYield = computed<string | null>(() => {
   if (!store.data || totalAnnualDividend.value === null) return null
-  const assets = parseFloat(totalAssets.value)
-  if (assets === 0) return null
-  const pct = (parseFloat(totalAnnualDividend.value) / assets * 100).toFixed(2)
+  const fundValuation = store.data.holdings
+    .filter(h => !isStockCode(h.tickerCode))
+    .reduce((s, h) => s + parseFloat(h.totalValuation), 0)
+  const base = parseFloat(totalAssets.value) - fundValuation
+  if (base <= 0) return null
+  const pct = (parseFloat(totalAnnualDividend.value) / base * 100).toFixed(2)
   return `配当利回り ${pct}%`
 })
 
