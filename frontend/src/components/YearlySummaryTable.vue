@@ -20,7 +20,11 @@
             data-testid="yearly-summary-row"
           >
             <td class="px-3 py-2 text-left text-gray-700">
-              {{ row.year }}
+              <RouterLink
+                :to="{ path: '/income', query: { year: String(row.year) } }"
+                class="text-blue-600 hover:underline"
+                data-testid="yearly-income-link"
+              >{{ row.year }}</RouterLink>
               <span v-if="row.isCurrentYear" class="ml-1 text-xs text-gray-400" data-testid="yearly-current-note">
                 （〜{{ todayStr }} 時点）
               </span>
@@ -42,6 +46,7 @@
       </table>
     </div>
     <p class="mt-2 text-xs text-gray-400">
+      年をクリックすると、その年の実現損益・配当の内訳（銘柄別・明細）を表示します。<br />
       ※過去年は確定分（実現＋配当）のみ。当年のみ現在の含み損益を含みます（前年末の含みが取れないため）。
       確定分は確定申告の参考値（配当は税引後・実現損益は約定日ベース。公式な数値は特定口座年間取引報告書をご確認ください）。
     </p>
@@ -49,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import { useFormatters } from '@/composables/useFormatters'
 import type { YearlySummaryRow } from '@/types/totalReturn'
 

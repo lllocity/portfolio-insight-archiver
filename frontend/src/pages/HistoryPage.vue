@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="mb-4 text-lg font-bold text-gray-800">スナップショット履歴</h1>
+    <h1 class="mb-4 text-lg font-bold text-gray-800">資産推移</h1>
 
     <!-- ローディング -->
     <div v-if="loading" class="py-8 text-center text-sm text-gray-500">読み込み中...</div>

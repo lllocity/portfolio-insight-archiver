@@ -8,7 +8,7 @@ import type {
   YearlySummaryRow,
 } from '@/types/totalReturn'
 
-function yearOf(date: string): number {
+export function yearOf(date: string): number {
   return parseInt(date.slice(0, 4), 10)
 }
 

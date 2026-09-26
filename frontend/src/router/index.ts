@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import PortfolioPage from '@/pages/PortfolioPage.vue'
 import HistoryPage from '@/pages/HistoryPage.vue'
 import PromptPage from '@/pages/PromptPage.vue'
+import IncomePage from '@/pages/IncomePage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import ForbiddenPage from '@/pages/ForbiddenPage.vue'
 
@@ -14,6 +15,7 @@ export const router = createRouter({
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', component: PortfolioPage },
     { path: '/history', component: HistoryPage },
+    { path: '/income', component: IncomePage },
     { path: '/prompt', component: PromptPage }
   ]
 })

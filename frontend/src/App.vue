@@ -81,7 +81,8 @@ const globalError = ref<string | null>(null)
 
 const tabs = [
   { key: 'portfolio', path: '/portfolio', label: 'ポートフォリオ' },
-  { key: 'history', path: '/history', label: '履歴' },
+  { key: 'history', path: '/history', label: '資産推移' },
+  { key: 'income', path: '/income', label: '実現損益・配当' },
   { key: 'prompt', path: '/prompt', label: 'AIプロンプト' }
 ]
 
